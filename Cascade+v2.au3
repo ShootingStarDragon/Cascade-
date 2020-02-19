@@ -1,6 +1,8 @@
 #include <MsgBoxConstants.au3>
 #include <Array.au3>
 #include <Process.au3>
+#include <GUIConstantsEx.au3>
+#include <WinAPIGdi.au3>
 
 Example()
 
@@ -66,6 +68,7 @@ Func Example()
 	;_ArrayDisplay($aArrayFinal, "check")
 	
 	#comments-start
+	;probably need a func that tells you which monitor you are on
 	;now that we have the data all i need to do is give the user some options:
 	;#1: Monitors available to cascade through
 	;#2: which windows I should cascade 
@@ -74,6 +77,26 @@ Func Example()
 		#3b: input a length and that would be the long side of an isoceles triangle starting from the upper left corner of the chosen monitor( monitorS ideally tho)
 		
 	#comments-end
+	$hGUI = GUICreate("Cascade+")
+	
+	;make a button for each monitor
+	$Monitors = _WinAPI_EnumDisplayMonitors()
+	MsgBox ( $MB_OK, "title", _WinAPI_GetMonitorInfo($Monitors[1][0])[3])
+	;For $i = 0 to $aScreenResolution[0]
+	;	$hCheck1 = GUICtrlCreateCheckbox(String(_WinAPI_GetMonitorInfo($Monitors[1][0])[3]))
+	;Next
+	
+	_WinOnMonitor($iXPos, $iYPos)
+	
+	;make a button for each window in aArrayFinal
+	$hCheck1 = GUICtrlCreateCheckbox(" Check 1", 10, 10, 200, 20)
+	GUISetState()
+	While 1
+		Switch GUIGetMsg()
+			Case $GUI_EVENT_CLOSE
+				Exit
+		EndSwitch
+	WEnd
 	
 	#comments-start
     ; Loop through the array displaying only visible windows with a title.
@@ -98,3 +121,24 @@ Func Example()
 	_ArrayDisplay($aArray, "array of all the available windows soon to be (movable?) buttons")
 	#comments-end
 EndFunc   ;==>Example
+
+Func _WinOnMonitor($iXPos, $iYPos)
+    Local $aMonitors = _WinAPI_EnumDisplayMonitors()
+    If IsArray($aMonitors) Then
+        ReDim $aMonitors[$aMonitors[0][0] + 1][5]
+        For $ix = 1 To $aMonitors[0][0]
+            $aPos = _WinAPI_GetPosFromRect($aMonitors[$ix][1])
+            For $j = 0 To 3
+                $aMonitors[$ix][$j + 1] = $aPos[$j]
+            Next
+        Next
+    EndIf
+    For $ixMonitor = 1 to $aMonitors[0][0] ; Step through array of monitors
+        If $iXPos > $aMonitors[$ixMonitor][1] And $iXPos <  $aMonitors[$ixMonitor][1] + $aMonitors[$ixMonitor][3] Then
+            If $iYPos > $aMonitors[$ixMonitor][2] And $iYPos < $aMonitors[$ixMonitor][2] + $aMonitors[$ixMonitor][4] Then
+                Return $aMonitors[$ixMonitor][0] ; return handle to monitor coordinate is on
+            EndIf
+        EndIf
+    Next
+    Return 0 ;Return 0 if coordinate is on none of the monitors
+EndFunc ;==>  _WinOnMonitor
