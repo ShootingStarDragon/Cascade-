@@ -25,9 +25,11 @@ Func Example()
 	Local $sFill = ""
     For $i = 1 To $aList[0][0]
 		;have to manually remove program manager I think
-        If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) And $aList[$i][0] <> "Program Manager" Then
+        ;If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) And $aList[$i][0] <> "Program Manager" Then
+		If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then
             ;MsgBox($MB_SYSTEMMODAL, "", "Title: " & $aList[$i][0] & @CRLF & "Handle: " & $aList[$i][1])
-			$sFill &= "New Item " & "Title: " & $aList[$i][0] & "Handle: " & $aList[$i][1] & "|"
+			$sFill &= $aList[$i][0] & "Handle: " & $aList[$i][1] & "|"
+			;$sFill &= $aList[$i][0] & "|"
 			;add the passing info then display at the end
         EndIf
     Next
