@@ -17,9 +17,17 @@ EndFunc ;==>_ArryRemoveBlanks
 Func Example()
     ; Retrieve a list of window handles.
     Local $aList = WinList("[REGEXPTITLE:(?i)(.+)]")
+	#comments-start
+		The array returned is two-dimensional and is made up as follows:
+		$aArray[0][0] = Number of windows returned
+		$aArray[1][0] = 1st window title
+		$aArray[1][1] = 1st window handle (HWND)
+		$aArray[2][0] = 2nd window title
+		$aArray[2][1] = 2nd window handle (HWND)
+	#comments-end
 
 	;make empty array
-	Global $aArray[1] 
+	Local $aArray[1] 
     ; Loop through the array displaying only visible windows with a title.
 	;blank string
 	Local $sFill = ""
