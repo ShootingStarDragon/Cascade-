@@ -3,7 +3,8 @@
 #include <Process.au3>
 #include <GUIConstantsEx.au3>
 #include <WinAPIGdi.au3>
-
+#include <WinAPI.au3>
+#include <WindowsConstants.au3>
 Example()
 
 Func _ArryRemoveBlanks(ByRef $arr)
@@ -81,15 +82,20 @@ Func Example()
 	
 	;make a button for each monitor
 	$Monitors = _WinAPI_EnumDisplayMonitors()
-	MsgBox ( $MB_OK, "title", _WinAPI_GetMonitorInfo($Monitors[1][0])[3])
-	;For $i = 0 to $aScreenResolution[0]
-	;	$hCheck1 = GUICtrlCreateCheckbox(String(_WinAPI_GetMonitorInfo($Monitors[1][0])[3]))
-	;Next
 	
-	_WinOnMonitor($iXPos, $iYPos)
+	dim $Menu[1]
+	
+	MsgBox ( $MB_OK, "title", _WinAPI_GetMonitorInfo($Monitors[1][0])[3])
+	For $i = 0 to _WinAPI_GetSystemMetrics($SM_CMONITORS)-1
+		;$Menu[$i] = GUICtrlCreateCheckbox(" Check 1", 10, 10)
+		_ArrayAdd($Menu, GUICtrlCreateCheckbox(_WinAPI_GetMonitorInfo($Monitors[$i+1][0])[3], 10, 10 + 40*$i))
+		;$hCheck1 = GUICtrlCreateCheckbox(String(_WinAPI_GetMonitorInfo($Monitors[1][0])[3]))
+	Next
+	
+	;_WinOnMonitor($iXPos, $iYPos)
 	
 	;make a button for each window in aArrayFinal
-	$hCheck1 = GUICtrlCreateCheckbox(" Check 1", 10, 10, 200, 20)
+	;$hCheck1 = GUICtrlCreateCheckbox(, 10, 10, 200, 20)
 	GUISetState()
 	While 1
 		Switch GUIGetMsg()
