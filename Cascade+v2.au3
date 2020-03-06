@@ -33,11 +33,15 @@ Func Example()
 	Local $aListFiltered[0]
 	;filtered list is just a 1d array of handles (HWND)
 	
+	Local $aTitles[0]
+	;winGetTitle fails for microsoft edge for some reason so just get titles from the source
+	
 	;filter winlist to get rid of windows with no titles and manually remove program manager
 	For $i = 1 to $aList[0][0]
 		;have to manually remove program manager I think
 		If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then
 			_ArrayAdd($aListFiltered, $aList[$i][1])
+			_ArrayAdd($aTitles, $aList[$i][0])
 		EndIf
 	Next
 	;let's check it right now by displaying aListFiltered
@@ -54,7 +58,10 @@ Func Example()
 	For $i = 0 to UBound($aListFiltered, 1)-1
 		;MsgBox ( $MB_OK, "title", $i & UBound($aListFiltered, 1) & WinGetTitle($aListFiltered[$i]) & $aListFiltered[$i] & _ProcessGetName($aListFiltered[$i]) & WinGetPos ($aListFiltered[$i]) & WinGetClientSize ($aListFiltered[$i]))
 		;name
-		$aArrayFinal[$i][0] = WinGetTitle($aListFiltered[$i])
+		;wingettitle fails on microsoft edge for some reason
+		;$aArrayFinal[$i][0] = WinGetTitle($aListFiltered[$i])
+		;$aArrayFinal[$i][0] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
+		$aArrayFinal[$i][0] = $aTitles[$i]
 		;HWND
 		$aArrayFinal[$i][1] = $aListFiltered[$i]
 		;exe name
@@ -66,7 +73,8 @@ Func Example()
 	Next
 	
 	;display array now
-	;_ArrayDisplay($aArrayFinal, "check")
+	;
+	_ArrayDisplay($aArrayFinal, "check")
 	
 	#comments-start
 	;probably need a func that tells you which monitor you are on
@@ -87,11 +95,11 @@ Func Example()
 	dim $Menu[1]
 	
 	;MsgBox ( $MB_OK, "title", _WinAPI_GetMonitorInfo($Monitors[1][0])[3])
-	For $i = 0 to _WinAPI_GetSystemMetrics($SM_CMONITORS)-1
-		;$Menu[$i] = GUICtrlCreateCheckbox(" Check 1", 10, 10)
-		_ArrayAdd($Menu, GUICtrlCreateCheckbox(_WinAPI_GetMonitorInfo($Monitors[$i+1][0])[3], 10, 10 + 40*$i))
-		;$hCheck1 = GUICtrlCreateCheckbox(String(_WinAPI_GetMonitorInfo($Monitors[1][0])[3]))
-	Next
+	;For $i = 0 to _WinAPI_GetSystemMetrics($SM_CMONITORS)-1
+	;	$Menu[$i] = GUICtrlCreateCheckbox(" Check 1", 10, 10)
+	;	_ArrayAdd($Menu, GUICtrlCreateCheckbox(_WinAPI_GetMonitorInfo($Monitors[$i+1][0])[3], 10, 10 + 40*$i))
+	;	;$hCheck1 = GUICtrlCreateCheckbox(String(_WinAPI_GetMonitorInfo($Monitors[1][0])[3]))
+	;Next
 	
 	;_WinOnMonitor($iXPos, $iYPos)
 	
