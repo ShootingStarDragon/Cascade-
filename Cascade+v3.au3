@@ -2,7 +2,7 @@
 #include <WinAPIGdi.au3>
 #include <Array.au3>
 #include <Process.au3>
-#include <GUIListViewEx/GUIListViewEx.au3>
+#include "GUIListViewEx\GUIListViewEx.au3"
 #include <WindowsConstants.au3>
 
 ;Retrieve a list of window handles.
@@ -59,8 +59,7 @@ For $i = 0 to UBound($aListFiltered, 1)-1
 Next
 
 ;display array now
-;
-_ArrayDisplay($aArrayFinal, "check")
+;_ArrayDisplay($aArrayFinal, "check")
 
 
 
@@ -115,24 +114,24 @@ $Label3b = GUICtrlCreateLabel("", 100, 80, 40, 20)
 $Label6 = GUICtrlCreateLabel("Selected Monitor", 10, 100)
 $Label6b = GUICtrlCreateLabel("", 100, 100, 200, 20)
 $Label7 = GUICtrlCreateLabel("Start Point X", 10, 120)
-$Label7b = GUICtrlCreateInput("", 100, 120, 200, 20)
+$Label7b = GUICtrlCreateInput("", 100, 120, 100, 20)
 $Label8 = GUICtrlCreateLabel("Start Point Y", 10, 140)
-$Label8b = GUICtrlCreateInput("", 100, 140, 200, 20)
+$Label8b = GUICtrlCreateInput("", 100, 140, 100, 20)
 $Label9 = GUICtrlCreateLabel("End Point X", 10, 160)
-$Label9b = GUICtrlCreateInput("", 100, 160, 200, 20)
+$Label9b = GUICtrlCreateInput("", 100, 160, 100, 20)
 $Label10 = GUICtrlCreateLabel("End Point Y", 10, 180)
-$Label10b = GUICtrlCreateInput("", 100, 180, 200, 20)
+$Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
 
 ;It is important to use _GUIListViewEx_Close when a enabled ListView is deleted to free the memory used
 ;                    by the $aGLVEx_Data array which shadows the ListView contents.
+;_GUIListViewEx_Close($iLV_Index)
 
 ;Func _GUIListViewEx_Init($hLV, $aArray = "", $iStart = 0, $iColour = 0, $fImage = False, $iAdded = 0)
 
-;$cListView_Left = GUICtrlCreateListView("Tom|Dick|Harry", 10, 40, 300, 300, $LVS_SHOWSELALWAYS)
-;$iLV_Left_Index = _GUIListViewEx_Init($cListView_Left, $aLV_List_Left, 0, 0, True, 1 + 2 + 8)
-
-;$cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 200)
 $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200, $LVS_SHOWSELALWAYS)
+
+;one of these gives a checkbox...
+;_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES))
 
 
 For $rowInt = 0 To UBound($aArrayFinal, 1)-1
@@ -142,27 +141,21 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	$blankStr &=  "|" & $aArrayFinal[$rowInt][2]
 	;add title
 	;MsgBox ( $MB_OK, "STRPls", $blankStr)
-	GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList )
+	GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
 Next
 
 ;
-;MsgBox ( $MB_OK, "title", UBound($aArrayFinal, 1) & UBound($aArrayFinal, 2))
-;For $colInt = 0 To UBound($aArrayFinal, 1)-1
-;	Local $blankStr = ""
-;	For $rowInt = 0 To UBound($aArrayFinal, 2)-1
-;		MsgBox ( $MB_OK, "title", $aArrayFinal[$rowInt][$colInt])
-;		$blankStr &=  $aArrayFinal[$colInt][$rowInt] & "|"
-;	Next
-;	;add guys separated by |
-;	MsgBox ( $MB_OK, "title", $blankStr)
-;	GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList )
-;Next
-
-$cListView_WindowListUDFVer = _GUIListViewEx_Init($cListView_WindowList, $aArrayFinal)
+$cListView_WindowListUDFVer = _GUIListViewEx_Init($cListView_WindowList, $aArrayFinal, 0, 0, True, + 2)
 
 Global $time = -1
 
+;You will need to register some Windows messages so that the UDF can intercept various key and mouse events and determine the correct actions to take. 
+_GUIListViewEx_MsgRegister()
+
+
+
 GUISetState()
+
 While 1
 	If $time = -1 Then ; this should only run once
         _StartTimer()
@@ -182,6 +175,7 @@ While 1
 		Case $hCombo
 			$sComboRead = GUICtrlRead($hCombo)
 			GUICtrlSetData($Label6b, $sComboRead)
+		_GUIListViewEx_Close($cListView_WindowListUDFVer)
 	EndSwitch
 WEnd
 
@@ -193,13 +187,13 @@ Func _UpdateInfo()
 	;update monitor name
     ;update the x coord label
 	GUICtrlSetData($Label2b, MouseGetPos()[0])
-    GUICtrlSetColor($Label2b, 0x00FF00)
+    ;GUICtrlSetColor($Label2b, 0x00FF00)
 	;update the y coord label
 	GUICtrlSetData($Label3b, MouseGetPos()[1])
-    GUICtrlSetColor($Label3b, 0x00FF00)
+    ;GUICtrlSetColor($Label3b, 0x00FF00)
 	;update monitor the mouse is on
 	GUICtrlSetData($Label1b, _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))[3])
-    GUICtrlSetColor($Label1b, 0x00FF00)
+    ;GUICtrlSetColor($Label1b, 0x00FF00)
 EndFunc
 
 Func _ArryRemoveBlanks(ByRef $arr)
