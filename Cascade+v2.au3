@@ -81,11 +81,12 @@ Func Example()
 	$hGUI = GUICreate("Cascade+")
 	
 	;make a button for each monitor
-	$Monitors = _WinAPI_EnumDisplayMonitors()
+	;$Monitors = _WinAPI_EnumDisplayMonitors()
 	
+	;make a dropdown list for each monitor instead
 	dim $Menu[1]
 	
-	MsgBox ( $MB_OK, "title", _WinAPI_GetMonitorInfo($Monitors[1][0])[3])
+	;MsgBox ( $MB_OK, "title", _WinAPI_GetMonitorInfo($Monitors[1][0])[3])
 	For $i = 0 to _WinAPI_GetSystemMetrics($SM_CMONITORS)-1
 		;$Menu[$i] = GUICtrlCreateCheckbox(" Check 1", 10, 10)
 		_ArrayAdd($Menu, GUICtrlCreateCheckbox(_WinAPI_GetMonitorInfo($Monitors[$i+1][0])[3], 10, 10 + 40*$i))
