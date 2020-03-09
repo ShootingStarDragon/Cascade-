@@ -73,7 +73,9 @@ $Monitors = _WinAPI_EnumDisplayMonitors()
 
 ;set window titles appropriately
 ;update the window title properly when new monitors are connected? nah just restart Cascade+
+
 Local $sHeaders = "Window Title|App Name(.exe)"
+
 
 For $intmon = 1 To $Monitors[0][0]
 	;MsgBox($MB_OK, "title1", $intmon)
@@ -82,6 +84,8 @@ For $intmon = 1 To $Monitors[0][0]
 	$sHeaders &= "|Monitor " & $intmon
 	Next
 
+	
+	
 ;remove empty init element in MonitorArray
 _ArryRemoveBlanks($MonitorArray)
 
@@ -154,10 +158,14 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	Local $blankStr = $aArrayFinal[$rowInt][0]
 	$blankStr &=  "|" & $aArrayFinal[$rowInt][2]
 	;add title
-	;MsgBox ( $MB_OK, "STRPls", $blankStr)
+	;MsgBox ( $MB_OK, "STRPls", $blankStr)	
+	;$ItemID = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
 	GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
 	;;;SET ITEM IMAGE TEST
-	_GUICtrlListView_AddItem( $hListView, $rowInt, 0 )                           ; Image index 0 = unchecked checkbox
+	;_GUICtrlListView_AddItem( $hListView, $rowInt, 0 )                           ; Image index 0 = unchecked checkbox
+	;remove the checkboxes on column 1 (format: [row],[column])
+	;_GUICtrlListView_SetItemState($hListView, $ItemID, 0, $LVIS_STATEIMAGEMASK)
+	;_WinAPI_RedrawWindow($hListView)
 Next
 
 ;
@@ -249,32 +257,78 @@ EndFunc ;==>  _WinOnMonitor
 
 
 ; WM_NOTIFY message handler
-Func WM_NOTIFY( $hWnd, $iMsg, $wParam, $lParam )
-	#forceref $hWnd, $iMsg, $wParam
-	Local $tNMHDR = DllStructCreate( $tagNMHDR, $lParam )
-	Local $hWndFrom = HWnd( DllStructGetData( $tNMHDR, "hWndFrom" ) )
-	Local $iCode = DllStructGetData( $tNMHDR, "Code" )
+;Func WM_NOTIFY( $hWnd, $iMsg, $wParam, $lParam )
+;	#forceref $hWnd, $iMsg, $wParam
+;	Local $tNMHDR = DllStructCreate( $tagNMHDR, $lParam )
+;	Local $hWndFrom = HWnd( DllStructGetData( $tNMHDR, "hWndFrom" ) )
+;	Local $iCode = DllStructGetData( $tNMHDR, "Code" )
 
-	Switch $hWndFrom
-		Case $hListView
-			Switch $iCode
-				Case $LVN_ITEMCHANGED
-					Local $tNMLISTVIEW = DllStructCreate( $tagNMLISTVIEW, $lParam )
-					Local $iItem = DllStructGetData( $tNMLISTVIEW, "Item" )
-					_GUICtrlListView_SetItemSelected( $hListView, $iItem, False )         ; Remove selected state
-					_GUICtrlListView_SetItemState( $hListView, $iItem, 0, $LVIS_FOCUSED ) ; Remove focused state
+;	Switch $hWndFrom
+;		Case $hListView
+;			Switch $iCode
+;				Case $LVN_ITEMCHANGED
+;					Local $tNMLISTVIEW = DllStructCreate( $tagNMLISTVIEW, $lParam )
+;					Local $iItem = DllStructGetData( $tNMLISTVIEW, "Item" )
+;					_GUICtrlListView_SetItemSelected( $hListView, $iItem, False )         ; Remove selected state
+;					_GUICtrlListView_SetItemState( $hListView, $iItem, 0, $LVIS_FOCUSED ) ; Remove focused state
+;
+;				Case $NM_CLICK
+;					Local $aHit = _GUICtrlListView_SubItemHitTest( $hListView )
+;					If $aHit[6] Then                         ; On item?
+;						If $aHit[3] Then                       ; On icon?
+;							If $aHit[1] = 0 Or $aHit[1] = 3 Then ; On subitem 0 or 3?
+;								Local $iImage = _GUICtrlListView_GetItemImage( $hListView, $aHit[0], $aHit[1] )  ; Image index 0 or 1
+;								_GUICtrlListView_SetItemImage( $hListView, $aHit[0], $iImage ? 0 : 1, $aHit[1] ) ; Switch image index
+;							EndIf                                      ; $iItem    $iImage          $iSubItem
+;						EndIf
+;					EndIf
+;			EndSwitch
+;	EndSwitch
+;	Return $GUI_RUNDEFMSG
+;EndFunc
 
-				Case $NM_CLICK
-					Local $aHit = _GUICtrlListView_SubItemHitTest( $hListView )
-					If $aHit[6] Then                         ; On item?
-						If $aHit[3] Then                       ; On icon?
-							If $aHit[1] = 0 Or $aHit[1] = 3 Then ; On subitem 0 or 3?
-								Local $iImage = _GUICtrlListView_GetItemImage( $hListView, $aHit[0], $aHit[1] )  ; Image index 0 or 1
-								_GUICtrlListView_SetItemImage( $hListView, $aHit[0], $iImage ? 0 : 1, $aHit[1] ) ; Switch image index
-							EndIf                                      ; $iItem    $iImage          $iSubItem
-						EndIf
-					EndIf
-			EndSwitch
-	EndSwitch
-	Return $GUI_RUNDEFMSG
-EndFunc
+Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
+    #forceref $hWnd, $iMsg, $iwParam
+    Local $hWndFrom, $iCode, $tNMHDR, $hWndListView, $tInfo, $iIndex
+    $hWndListView = $hListView
+
+    $tNMHDR = DllStructCreate($tagNMHDR, $ilParam)
+    $hWndFrom = HWnd(DllStructGetData($tNMHDR, "hWndFrom"))
+    $iCode = DllStructGetData($tNMHDR, "Code")
+    Switch $hWndFrom
+        Case $hWndListView
+            Switch $iCode
+                Case $NM_CLICK ; Sent by a list-view control when the user clicks an item with the left mouse button
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                        If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
+                            _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
+                        Return 1
+                    EndIf
+                    
+                Case $NM_DBLCLK ; Sent by a list-view control when the user double-clicks an item with the left mouse button
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                        If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
+                            _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
+                        Return 1
+                    EndIf
+                    
+                Case $NM_RCLICK ; Sent by a list-view control when the user clicks an item with the right mouse button
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                        _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
+                        Return 1
+                    EndIf
+
+                Case $NM_RDBLCLK ; Sent by a list-view control when the user double-clicks an item with the right mouse button
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                        If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
+                            _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
+                        Return 1
+                    EndIf
+            EndSwitch
+    EndSwitch
+    Return $GUI_RUNDEFMSG
+EndFunc   ;==>WM_NOTIFY
