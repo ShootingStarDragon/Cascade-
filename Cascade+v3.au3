@@ -128,11 +128,25 @@ $Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
 
 ;Func _GUIListViewEx_Init($hLV, $aArray = "", $iStart = 0, $iColour = 0, $fImage = False, $iAdded = 0)
 
-$cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200, $LVS_SHOWSELALWAYS)
+$cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200) ;$LVS_SHOWSELALWAYS
 
-;one of these gives a checkbox...
-;_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;getting checkboxes so i can hack onto GUIListViewEx
 
+_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES))
+
+$hListView = GUICtrlGetHandle( $cListView_WindowList )    
+; ImageList
+Local $idListView2 = GUICtrlCreateListView( "", 0, 0, 1, 1 )                  ; 1x1 pixel listview to create state image list with checkbox icons
+_GUICtrlListView_SetExtendedListViewStyle( $idListView2, $LVS_EX_CHECKBOXES ) ; The $LVS_EX_CHECKBOXES style forces the state image list to be created
+Local $hStateImageList = _GUICtrlListView_GetImageList( $hListView, 2 ) ; 2 = Image list with state images
+; Add state ImageList as a normal ImageList
+_GUICtrlListView_SetImageList( $hListView, $hStateImageList, 1 ) ; 1 = Image list with small icons
+; Register WM_NOTIFY message handler
+GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;MsgBox ( $MB_OK, "start of MY ROW", "")
@@ -142,15 +156,20 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;add title
 	;MsgBox ( $MB_OK, "STRPls", $blankStr)
 	GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
+	;;;SET ITEM IMAGE TEST
+	_GUICtrlListView_AddItem( $hListView, $rowInt, 0 )                           ; Image index 0 = unchecked checkbox
 Next
 
 ;
-$cListView_WindowListUDFVer = _GUIListViewEx_Init($cListView_WindowList, $aArrayFinal, 0, 0, True, + 2)
+;;;;;$cListView_WindowListUDFVer = _GUIListViewEx_Init($cListView_WindowList, $aArrayFinal, 0, 0, True, + 2)
+
+
+
 
 Global $time = -1
 
 ;You will need to register some Windows messages so that the UDF can intercept various key and mouse events and determine the correct actions to take. 
-_GUIListViewEx_MsgRegister()
+;;;;;_GUIListViewEx_MsgRegister()
 
 
 
@@ -229,3 +248,33 @@ Func _WinOnMonitor($iXPos, $iYPos)
 EndFunc ;==>  _WinOnMonitor
 
 
+; WM_NOTIFY message handler
+Func WM_NOTIFY( $hWnd, $iMsg, $wParam, $lParam )
+	#forceref $hWnd, $iMsg, $wParam
+	Local $tNMHDR = DllStructCreate( $tagNMHDR, $lParam )
+	Local $hWndFrom = HWnd( DllStructGetData( $tNMHDR, "hWndFrom" ) )
+	Local $iCode = DllStructGetData( $tNMHDR, "Code" )
+
+	Switch $hWndFrom
+		Case $hListView
+			Switch $iCode
+				Case $LVN_ITEMCHANGED
+					Local $tNMLISTVIEW = DllStructCreate( $tagNMLISTVIEW, $lParam )
+					Local $iItem = DllStructGetData( $tNMLISTVIEW, "Item" )
+					_GUICtrlListView_SetItemSelected( $hListView, $iItem, False )         ; Remove selected state
+					_GUICtrlListView_SetItemState( $hListView, $iItem, 0, $LVIS_FOCUSED ) ; Remove focused state
+
+				Case $NM_CLICK
+					Local $aHit = _GUICtrlListView_SubItemHitTest( $hListView )
+					If $aHit[6] Then                         ; On item?
+						If $aHit[3] Then                       ; On icon?
+							If $aHit[1] = 0 Or $aHit[1] = 3 Then ; On subitem 0 or 3?
+								Local $iImage = _GUICtrlListView_GetItemImage( $hListView, $aHit[0], $aHit[1] )  ; Image index 0 or 1
+								_GUICtrlListView_SetItemImage( $hListView, $aHit[0], $iImage ? 0 : 1, $aHit[1] ) ; Switch image index
+							EndIf                                      ; $iItem    $iImage          $iSubItem
+						EndIf
+					EndIf
+			EndSwitch
+	EndSwitch
+	Return $GUI_RUNDEFMSG
+EndFunc
