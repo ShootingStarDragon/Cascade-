@@ -8,7 +8,7 @@ Opt('MustDeclareVars', 1)
 
 Global $Debug_LV = False ; Check ClassName being passed to ListView functions, set to True and use a handle to another control to see it work
 
-Global $hListView, $iIndex
+Global $hListView, $iIndex, $iIndex2, $iIndex3, $aIndexList[1]
 
 _Main()
 
@@ -30,26 +30,21 @@ Func _Main()
 
     ; Add items
     $iIndex = _GUICtrlListView_AddItem($hListView, "Row 1: Col 1")
-	;MsgBox ( $MB_OK, "title", $iIndex)
     _GUICtrlListView_SetItemState($hListView, $iIndex, 0, $LVIS_STATEIMAGEMASK)
-    _WinAPI_RedrawWindow($hListView)
+	$aIndexList[0] = $iIndex
+    ;_WinAPI_RedrawWindow($hListView)
     _GUICtrlListView_AddSubItem($hListView, 0, "Row 1: Col 2", 1)
     _GUICtrlListView_AddSubItem($hListView, 0, "Row 1: Col 3", 2)
-    _GUICtrlListView_AddItem($hListView, "Row 2: Col 1")
+    $iIndex2 = _GUICtrlListView_AddItem($hListView, "Row 2: Col 1")
+	_ArrayAdd ( $aIndexList, $iIndex2)
+	_GUICtrlListView_SetItemState($hListView, $iIndex2, 0, $LVIS_STATEIMAGEMASK)
     _GUICtrlListView_AddSubItem($hListView, 1, "Row 2: Col 2", 1)
-    _GUICtrlListView_AddItem($hListView, "Row 3: Col 1", 2)
-	
-	;does this only work for 1,1 or what?
-	;clear row2col1
-	_GUICtrlListView_SetItemState($hListView, 1, 0, $LVIS_STATEIMAGEMASK)
-	;clear row3col1
-	_GUICtrlListView_SetItemState($hListView, 2, 0, $LVIS_STATEIMAGEMASK)
-	;do i really have to redraw?
-	;so redraw does clear the boxes but clicking summons the boxes again
+    $iIndex3 = _GUICtrlListView_AddItem($hListView, "Row 3: Col 1", 2)
+	_ArrayAdd ( $aIndexList, $iIndex3)
+	_GUICtrlListView_SetItemState($hListView, $iIndex3, 0, $LVIS_STATEIMAGEMASK)
 	_WinAPI_RedrawWindow($hListView)
-	;BIG HINT: in WM_NOTIFY you have to add more elements to $iIndex because it specifically does If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
-	;before toggling
 
+	_ArrayDisplay ($aIndexList )
     ; Loop until user exits
     Do
     Until GUIGetMsg() = $GUI_EVENT_CLOSE
@@ -69,7 +64,9 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
             Switch $iCode
                 Case $NM_CLICK ; Sent by a list-view control when the user clicks an item with the left mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+					;HUGE HINT: convert "= $iIndex" into a search of an index list
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
                             _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
                         Return 1
@@ -77,7 +74,8 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
                     
                 Case $NM_DBLCLK ; Sent by a list-view control when the user double-clicks an item with the left mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
                             _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
                         Return 1
@@ -85,14 +83,16 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
                     
                 Case $NM_RCLICK ; Sent by a list-view control when the user clicks an item with the right mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
                         Return 1
                     EndIf
 
                 Case $NM_RDBLCLK ; Sent by a list-view control when the user double-clicks an item with the right mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
                             _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
                         Return 1
