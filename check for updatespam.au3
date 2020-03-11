@@ -142,14 +142,13 @@ $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200) ;$LV
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;getting checkboxes so i can hack onto GUIListViewEx
 
-_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES))
+_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES))
 
 $hListView = GUICtrlGetHandle( $cListView_WindowList )    
 ; ImageList
 Local $idListView2 = GUICtrlCreateListView( "", 0, 0, 1, 1 )                  ; 1x1 pixel listview to create state image list with checkbox icons
-;apparently you can checkboxes twice to get an extra space for a supposed checkbox or smth...
-;_GUICtrlListView_SetExtendedListViewStyle( $idListView2, $LVS_EX_CHECKBOXES ) ; The $LVS_EX_CHECKBOXES style forces the state image list to be created
-Local $hStateImageList = _GUICtrlListView_GetImageList( $idListView2, 2 ) ; 2 = Image list with state images
+_GUICtrlListView_SetExtendedListViewStyle( $idListView2, $LVS_EX_CHECKBOXES ) ; The $LVS_EX_CHECKBOXES style forces the state image list to be created
+Local $hStateImageList = _GUICtrlListView_GetImageList( $hListView, 2 ) ; 2 = Image list with state images
 ; Add state ImageList as a normal ImageList
 _GUICtrlListView_SetImageList( $hListView, $hStateImageList, 1 ) ; 1 = Image list with small icons
 ; Register WM_NOTIFY message handler
@@ -318,60 +317,9 @@ EndFunc ;==>  _WinOnMonitor
 ;	Return $GUI_RUNDEFMSG
 ;EndFunc
 
-;Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
-;    #forceref $hWnd, $iMsg, $iwParam
-;    Local $hWndFrom, $iCode, $tNMHDR, $hWndListView, $tInfo
-;    $hWndListView = $hListView
-;
-;    $tNMHDR = DllStructCreate($tagNMHDR, $ilParam)
-;    $hWndFrom = HWnd(DllStructGetData($tNMHDR, "hWndFrom"))
-;    $iCode = DllStructGetData($tNMHDR, "Code")
-;    Switch $hWndFrom
-;        Case $hWndListView
-;            Switch $iCode
-;                Case $NM_CLICK ; Sent by a list-view control when the user clicks an item with the left mouse button
-;                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-;					;HUGE HINT: convert "= $iIndex" into a search of an index list
-;                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
-;					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
-;                        If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
-;                            _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
-;                        Return 1
-;                    EndIf
-;                    
-;                Case $NM_DBLCLK ; Sent by a list-view control when the user double-clicks an item with the left mouse button
-;                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-;                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
-;					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
-;                        If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
-;                            _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
-;                        Return 1
-;                    EndIf
-;                    
-;                Case $NM_RCLICK ; Sent by a list-view control when the user clicks an item with the right mouse button
-;                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-;                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
-;					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
-;                        _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
-;                        Return 1
-;                    EndIf
-;
-;                Case $NM_RDBLCLK ; Sent by a list-view control when the user double-clicks an item with the right mouse button
-;                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-;                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
-;					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
-;                        If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
-;                            _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
-;                        Return 1
-;                    EndIf
-;            EndSwitch
-;    EndSwitch
-;    Return $GUI_RUNDEFMSG
-;EndFunc   ;==>WM_NOTIFY
-
 Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
     #forceref $hWnd, $iMsg, $iwParam
-    Local $hWndFrom, $iCode, $tNMHDR, $hWndListView, $tInfo
+    Local $hWndFrom, $iCode, $tNMHDR, $hWndListView, $tInfo, $iIndex
     $hWndListView = $hListView
 
     $tNMHDR = DllStructCreate($tagNMHDR, $ilParam)
@@ -380,27 +328,39 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
     Switch $hWndFrom
         Case $hWndListView
             Switch $iCode
-				; Sent by a list-view control when the user clicks an item with the left mouse button
-                ;Case $NM_CLICK Or $NM_DBLCLK Or $NM_RCLICK Or $NM_RDBLCLK
-				Case $NM_CLICK
+                Case $NM_CLICK ; Sent by a list-view control when the user clicks an item with the left mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-					
-					;this is to toggle checkboxes
-					;Local $aHit = _GUICtrlListView_SubItemHitTest( $hListView )
-				    ;If $aHit[0] >= 0 And $aHit[1] >= 0 Then                                                ; Item and subitem
-					;  Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      ; Get checkbox icon
-					;  _GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) ; Toggle checkbox icon
-					;  _GUICtrlListView_RedrawItems( $cListView_WindowList, $aHit[0], $aHit[0] )                      ; Redraw listview item
-				    ;EndIf
-					
-					
                     ;If DllStructGetData($tInfo, "Index") = $iIndex Then
 					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
-                        If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then
-                            _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
-						EndIf
-						;MsgBox ( $MB_OK, "title", "click")
-                        Return 10
+                        If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
+                            _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
+                        Return 1
+                    EndIf
+                    
+                Case $NM_DBLCLK ; Sent by a list-view control when the user double-clicks an item with the left mouse button
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
+                        If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
+                            _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
+                        Return 1
+                    EndIf
+                    
+                Case $NM_RCLICK ; Sent by a list-view control when the user clicks an item with the right mouse button
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
+                        _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
+                        Return 1
+                    EndIf
+
+                Case $NM_RDBLCLK ; Sent by a list-view control when the user double-clicks an item with the right mouse button
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
+                        If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
+                            _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
+                        Return 1
                     EndIf
             EndSwitch
     EndSwitch
