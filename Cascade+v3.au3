@@ -4,6 +4,11 @@
 #include <Process.au3>
 #include "GUIListViewEx\GUIListViewEx.au3"
 #include <WindowsConstants.au3>
+#include <GuiListView.au3>
+#include <GuiImageList.au3>
+
+;set aIndexList of indicies so i can clear the checkboxes on 1st column
+Global $aIndexList[1]
 
 ;Retrieve a list of window handles.
 Local $aList = WinList("[REGEXPTITLE:(?i)(.+)]")
@@ -151,6 +156,7 @@ GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Local $IndexCounter = 0
 
 For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;MsgBox ( $MB_OK, "start of MY ROW", "")
@@ -160,14 +166,38 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;add title
 	;MsgBox ( $MB_OK, "STRPls", $blankStr)	
 	;$ItemID = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
-	GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
+	$LVItem = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
+	;clear the checkbox
+	;_GUICtrlListView_SetItemState($hListView, $LVItem, 0, $LVIS_STATEIMAGEMASK)
+	
+	;HEADS UP
+	;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
+	;HEADS UP CONTROL != YOUR ID
+	_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
+	
+	
+	;	MsgBox ( $MB_OK, "title", $IndexCounter & "|" & $LVItem)
+	
+	;;$aIndexList[$rowInt] = $LVItem
+	;	$aIndexList[$IndexCounter] = $LVItem
+	;
+	_ArrayAdd ( $aIndexList, $IndexCounter)
+
 	;;;SET ITEM IMAGE TEST
 	;_GUICtrlListView_AddItem( $hListView, $rowInt, 0 )                           ; Image index 0 = unchecked checkbox
 	;remove the checkboxes on column 1 (format: [row],[column])
 	;_GUICtrlListView_SetItemState($hListView, $ItemID, 0, $LVIS_STATEIMAGEMASK)
 	;_WinAPI_RedrawWindow($hListView)
+	
+	
+	;MsgBox ( $MB_OK, "title", $IndexCounter)
+	$IndexCounter += 1
 Next
+_ArrayDelete ( $aIndexList, 0 )
+;_ArrayDisplay ($aIndexList )
 
+;redraw everything so checkboxes get removed
+_WinAPI_RedrawWindow($hListView)
 ;
 ;;;;;$cListView_WindowListUDFVer = _GUIListViewEx_Init($cListView_WindowList, $aArrayFinal, 0, 0, True, + 2)
 
@@ -300,7 +330,8 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
             Switch $iCode
                 Case $NM_CLICK ; Sent by a list-view control when the user clicks an item with the left mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
                             _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
                         Return 1
@@ -308,7 +339,8 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
                     
                 Case $NM_DBLCLK ; Sent by a list-view control when the user double-clicks an item with the left mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
                             _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
                         Return 1
@@ -316,14 +348,16 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
                     
                 Case $NM_RCLICK ; Sent by a list-view control when the user clicks an item with the right mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
                         Return 1
                     EndIf
 
                 Case $NM_RDBLCLK ; Sent by a list-view control when the user double-clicks an item with the right mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    If DllStructGetData($tInfo, "Index") = $iIndex Then
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         If Not _GUICtrlListView_GetItemSelected($hListView, $iIndex) Then _
                             _GUICtrlListView_SetItemSelected($hListView, $iIndex, True, True)
                         Return 1
