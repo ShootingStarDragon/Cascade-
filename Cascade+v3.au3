@@ -396,11 +396,39 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 					
                     ;If DllStructGetData($tInfo, "Index") = $iIndex Then
 					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
-                        If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then
+                        If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
                             _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
-						EndIf
+						;EndIf
 						;MsgBox ( $MB_OK, "title", "click")
-                        Return 10
+                        Return 1
+                    EndIf
+                Case $NM_DBLCLK ; Sent by a list-view control when the user double-clicks an item with the left mouse button
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
+                        If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
+                            _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
+                        ;MsgBox ( $MB_OK, "title", "click2")
+						Return 1
+                    EndIf
+                    
+                Case $NM_RCLICK ; Sent by a list-view control when the user clicks an item with the right mouse button
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
+                        _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
+                        ;MsgBox ( $MB_OK, "title", "click3")
+						Return 1
+                    EndIf
+
+                Case $NM_RDBLCLK ; Sent by a list-view control when the user double-clicks an item with the right mouse button
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
+                        If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
+                            _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
+							;MsgBox ( $MB_OK, "title", "click4")
+						Return 1
                     EndIf
             EndSwitch
     EndSwitch
