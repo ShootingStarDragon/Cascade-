@@ -39,7 +39,7 @@ Next
 ;_ArrayDisplay($aListFiltered, "check")
 
 ;make the array with info:
-;NAME			HWND 			exe name 		position 	size
+;NAME			HWND 			exe name 	PID	position 	size
 ;array size is Ubound of the filtered list and 5 columns
 ;make empty array
 Local $aArrayFinal[UBound($aListFiltered, 1)][5]
@@ -58,10 +58,47 @@ For $i = 0 to UBound($aListFiltered, 1)-1
 	;exe name
 	$aArrayFinal[$i][2] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
 	;pos
-	$aArrayFinal[$i][3] = WinGetPos($aListFiltered[$i])[0] & "," & WinGetPos($aListFiltered[$i])[1]
+	$aArrayFinal[$i][4] = WinGetPos($aListFiltered[$i])[0] & "," & WinGetPos($aListFiltered[$i])[1]
 	;size
-	$aArrayFinal[$i][4] = WinGetClientSize($aListFiltered[$i])[0] & "," & WinGetClientSize($aListFiltered[$i])[1]
+	$aArrayFinal[$i][5] = WinGetClientSize($aListFiltered[$i])[0] & "," & WinGetClientSize($aListFiltered[$i])[1]
 Next
+
+#comments-start
+WinGetProcess()
+
+---
+
+To be used on your hwnd's from winlist to see if its the PID your looking for.
+
+But, this can return multiple matches, as a process can have multiple windows. so some additional window title information is probably needed to make sure you get the one your after.
+
+---
+
+
+---
+PsaltyDS  Posted July 6, 2010 (edited) 
+
+Only gets the handle for the FIRST visible window. As was pointed out earlier, a process can and often does have multiple windows. Try it this way:
+
+#include <Array.au3>
+
+; ...
+
+; Returns an array of all Windows associated with a given process
+Func WinHandFromPID($pid, $winTitle = "", $timeout = 8)
+    Local $secs = TimerInit()
+    Do
+        $wins = WinList($winTitle)
+        For $i = UBound($wins) - 1 To 1 Step -1
+            If (WinGetProcess($wins[$i][1]) <> $pid) Or (BitAND(WinGetState($wins[$i][1]), 2) = 0) Then _ArrayDelete($wins, $i)
+        Next
+        $wins[0][0] = UBound($wins) - 1
+        If $wins[0][0] Then Return SetError(0, 0, $wins)
+        Sleep(1000)
+    Until TimerDiff($secs) >= $timeout * 1000
+    Return SetError(1, 0, $wins)
+EndFunc   ;==>WinHandFromPID
+#comments-end
 
 ;display array now
 ;_ArrayDisplay($aArrayFinal, "check")
@@ -96,10 +133,10 @@ _ArryRemoveBlanks($MonitorArray)
 
 ;GUICreate ( "title" [, width [, height [, left = -1 [, top = -1 [, style = -1 [, exStyle = -1 [, parent = 0]]]]]]] )
 ;$hGUI = GUICreate("Cascade+",500,500,500,500,$WS_SIZEBOX)
-$hGUI = GUICreate("Cascade+",500,500,-1,-1,$WS_SIZEBOX)
+$hGUI = GUICreate("Cascade+",500,500,-1,-1,$WS_SIZEBOX )
 ;To be able to resize a GUI window it needs to have been created with the $WS_SIZEBOX and $WS_SYSMENU styles. See GUICreate().
 
-; And here we get the elements into a list
+; And here we get the elements (monitors) into a list
 $sList = ""
 For $i = 0 To UBound($MonitorArray) - 1
 	$sList &= "|" & $MonitorArray[$i]
@@ -146,9 +183,11 @@ _GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_F
 
 $hListView = GUICtrlGetHandle( $cListView_WindowList )    
 ; ImageList
+;idListView2 and cListView_WindowList might be redudant
 Local $idListView2 = GUICtrlCreateListView( "", 0, 0, 1, 1 )                  ; 1x1 pixel listview to create state image list with checkbox icons
 ;apparently you can checkboxes twice to get an extra space for a supposed checkbox or smth...
 ;_GUICtrlListView_SetExtendedListViewStyle( $idListView2, $LVS_EX_CHECKBOXES ) ; The $LVS_EX_CHECKBOXES style forces the state image list to be created
+; Get state ImageList
 Local $hStateImageList = _GUICtrlListView_GetImageList( $idListView2, 2 ) ; 2 = Image list with state images
 ; Add state ImageList as a normal ImageList
 _GUICtrlListView_SetImageList( $hListView, $hStateImageList, 1 ) ; 1 = Image list with small icons
@@ -176,6 +215,11 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;HEADS UP CONTROL != YOUR ID
 	_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
 	
+	;add the checkboxes per monitor
+	For $imonitor = 0 To $Monitors[0][0]
+		;_GUICtrlListView_AddSubItem( $cListView_WindowList, $IndexCounter, "checkbox", $imonitor + 2, 1 ) ; Image index 0 = unchecked checkbox
+		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3 ) ; 3 is the zero based index of fourth column
+	Next
 	
 	;	MsgBox ( $MB_OK, "title", $IndexCounter & "|" & $LVItem)
 	
@@ -233,7 +277,7 @@ While 1
 		Case $hCombo
 			$sComboRead = GUICtrlRead($hCombo)
 			GUICtrlSetData($Label6b, $sComboRead)
-		_GUIListViewEx_Close($cListView_WindowListUDFVer)
+		;;;;;_GUIListViewEx_Close($cListView_WindowListUDFVer)
 	EndSwitch
 WEnd
 
@@ -382,6 +426,16 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
             Switch $iCode
 				; Sent by a list-view control when the user clicks an item with the left mouse button
                 ;Case $NM_CLICK Or $NM_DBLCLK Or $NM_RCLICK Or $NM_RDBLCLK
+				#comments-start
+				Case $NM_CLICK
+				  Local $aHit = _GUICtrlListView_SubItemHitTest( $hListView )
+				  If $aHit[0] >= 0 And $aHit[1] >= 0 Then                                                ; Item and subitem
+					Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      ; Get checkbox icon
+					_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) ; Toggle checkbox icon
+					_GUICtrlListView_RedrawItems( $cListView_WindowList, $aHit[0], $aHit[0] )                      ; Redraw listview item
+				  EndIf
+				#comments-end				
+
 				Case $NM_CLICK
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
 					
@@ -430,7 +484,13 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 							;MsgBox ( $MB_OK, "title", "click4")
 						Return 1
                     EndIf
+
             EndSwitch
     EndSwitch
     Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_NOTIFY
+
+#comments-start
+...
+...
+#comments-end

@@ -35,8 +35,10 @@ Func Example()
   For $i = 0 To 100 - 1
     _GUICtrlListView_AddItem( $idListView, $i, 0 )                           ; Image index 0 = unchecked checkbox
     For $j = 1 To 9
-      _GUICtrlListView_AddSubItem( $idListView, $i, $i & " / " & $j, $j, 0 ) ; Image index 0 = unchecked checkbox
+      ;_GUICtrlListView_AddSubItem( $idListView, $i, $i & " / " & $j, $j, 0 ) ; Image index 0 = unchecked checkbox
+	  _GUICtrlListView_AddSubItem( $idListView, $i, $i & " / " & $j, $j, 1 ) ; Image index 0 = unchecked checkbox
     Next
+	;_GUICtrlListView_SetItemState ( $hListView, $i, 1, $LVIS_STATEIMAGEMASK )
   Next
 
   ; WM_NOTIFY message handler to toggle checkboxes
