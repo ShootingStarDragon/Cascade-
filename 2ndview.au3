@@ -178,8 +178,8 @@ Global $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 20
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;getting checkboxes so i can hack onto GUIListViewEx
-;$LVS_EX_FULLROWSELECT
-_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES))
+
+_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES))
 
 $hListView = GUICtrlGetHandle( $cListView_WindowList )    
 ; ImageList
@@ -219,7 +219,7 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;add the checkboxes per monitor
 	For $imonitor = 0 To $Monitors[0][0]
 		;_GUICtrlListView_AddSubItem( $cListView_WindowList, $IndexCounter, "checkbox", $imonitor + 2, 1 ) ; Image index 0 = unchecked checkbox
-		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 2) 
+		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 2) ; 3 is the zero based index of fourth column
 		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
 	Next
 	
@@ -248,10 +248,15 @@ _WinAPI_RedrawWindow($hListView)
 ;
 ;;;;;$cListView_WindowListUDFVer = _GUIListViewEx_Init($cListView_WindowList, $aArrayFinal, 0, 0, True, + 2)
 
+
+
+
 Global $time = -1
 
 ;You will need to register some Windows messages so that the UDF can intercept various key and mouse events and determine the correct actions to take. 
 ;;;;;_GUIListViewEx_MsgRegister()
+
+
 
 GUISetState()
 
@@ -327,6 +332,7 @@ Func _WinOnMonitor($iXPos, $iYPos)
     Return 0 ;Return 0 if coordinate is on none of the monitors
 EndFunc ;==>  _WinOnMonitor
 
+
 Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
     #forceref $hWnd, $iMsg, $iwParam
     Local $hWndFrom, $iCode, $tNMHDR, $hWndListView, $tInfo
@@ -338,24 +344,36 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
     Switch $hWndFrom
         Case $hWndListView
             Switch $iCode
-				Case $NM_CLICK ; Sent by a list-view control when the user clicks an item with the left mouse button
-					#comments-start
-						_GUICtrlListView_SubItemHitTest
-						Returns an array with the following format:
-						[ 0] - 0-based index of the item at the specified position, or -1
-						[ 1] - 0-based index of the subitem at the specified position, or -1
-						[ 2] - If True, position is in control's client window but not on an item
-						[ 3] - If True, position is over item icon
-						[ 4] - If True, position is over item text
-						[ 5] - If True, position is over item state image (THE DEFAULT FROM THE FIRST COLUMN)
-						[ 6] - If True, position is somewhere on the item
-						[ 7] - If True, the position is above the control's client area
-						[ 8] - If True, the position is below the control's client area
-						[ 9] - If True, the position is to the left of the client area
-						[10] - If True, the position is to the right of the client area
-					#comments-end
-					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+				; Sent by a list-view control when the user clicks an item with the left mouse button
+				
+				Case $NM_CLICK
+				#comments-start
+					_GUICtrlListView_SubItemHitTest
+					Returns an array with the following format:
+					[ 0] - 0-based index of the item at the specified position, or -1
+					[ 1] - 0-based index of the subitem at the specified position, or -1
+					[ 2] - If True, position is in control's client window but not on an item
+					[ 3] - If True, position is over item icon
+					[ 4] - If True, position is over item text
+					[ 5] - If True, position is over item state image (THE DEFAULT FROM THE FIRST COLUMN)
+					[ 6] - If True, position is somewhere on the item
+					[ 7] - If True, the position is above the control's client area
+					[ 8] - If True, the position is below the control's client area
+					[ 9] - If True, the position is to the left of the client area
+					[10] - If True, the position is to the right of the client area
+				#comments-end
 					Local $aHit = _GUICtrlListView_SubItemHitTest( $hListView )
+					;
+					MsgBox ( $MB_OK, "title", $aHit[3])
+					;_ArrayDisplay($aHit, "the nexus")
+					
+					If $aHit[0] >= 0 And $aHit[1] >= 0 And $aHit[3] == True Then                                                			   ; Item and subitem
+						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      ; Get checkbox icon
+						_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) ; Toggle checkbox icon
+						_GUICtrlListView_RedrawItems( $cListView_WindowList, $aHit[0], $aHit[0] )                      ; Redraw listview item
+					EndIf
+					#comments-start
+                    $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
                     ;If DllStructGetData($tInfo, "Index") = $iIndex Then
 					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
@@ -363,23 +381,8 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 						;EndIf
 						;MsgBox ( $MB_OK, "title", "click")
                         Return 1
-					ElseIf $aHit[0] >= 0 And $aHit[1] >= 2 Then                                                		   	   ; Item and subitem
-						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      ; Get checkbox icon
-						_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) ; Toggle checkbox icon
-						;clear all other checkboxes so we force user to pick only one monitor (aka a window cannot exist in more than 1 monitor right?)
-						;know we have 2 initial columns + # of monitors so just iterate over # of monitors +2 to clear checkmarks AND skip $aHit[1].
-						For $i = 0 To UBound($MonitorArray) - 1
-							;if we're not the selected column set the subitem to empty checkbox
-							If $i + 2 <> $aHit[1] Then
-								_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], 0, $i + 2 )
-							EndIf
-						Next
-						;_GUICtrlListView_RedrawItems( $cListView_WindowList, $aHit[0], $aHit[0] )                      ; Redraw listview item
-						_WinAPI_RedrawWindow($cListView_WindowList)
                     EndIf
-					
-					
-				
+					#comments-end
 				
                 Case $NM_DBLCLK ; Sent by a list-view control when the user double-clicks an item with the left mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
