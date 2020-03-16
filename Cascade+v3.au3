@@ -291,7 +291,15 @@ Func _UpdateInfo()
 	GUICtrlSetData($Label3b, MouseGetPos()[1])
     ;GUICtrlSetColor($Label3b, 0x00FF00)
 	;update monitor the mouse is on
-	GUICtrlSetData($Label1b, _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))[3])
+	;GUICtrlSetData($Label1b, _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))[3])
+	;_WinAPI_GetMonitorInfo can not have the display so i need to check the length of this to be at least 4 to proceed:
+	If UBound(_WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))) > 3 Then
+		GUICtrlSetData($Label1b, _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))[3])
+	Else
+		GUICtrlSetData($Label1b, "Error, please wait.")
+	EndIf
+	
+	
     ;GUICtrlSetColor($Label1b, 0x00FF00)
 EndFunc
 
