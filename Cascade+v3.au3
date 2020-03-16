@@ -6,6 +6,8 @@
 #include <WindowsConstants.au3>
 #include <GuiListView.au3>
 #include <GuiImageList.au3>
+#include <GuiButton.au3>
+#include <EditConstants.au3>
 
 ;set aIndexList of indicies so i can clear the checkboxes on 1st column
 Global $aIndexList[1]
@@ -160,6 +162,7 @@ $Label3b = GUICtrlCreateLabel("", 100, 80, 40, 20)
 $Label6 = GUICtrlCreateLabel("Selected Monitor", 10, 100)
 $Label6b = GUICtrlCreateLabel("", 100, 100, 200, 20)
 $Label7 = GUICtrlCreateLabel("Start Point X", 10, 120)
+;GUICtrlSetData 
 $Label7b = GUICtrlCreateInput("", 100, 120, 100, 20)
 $Label8 = GUICtrlCreateLabel("Start Point Y", 10, 140)
 $Label8b = GUICtrlCreateInput("", 100, 140, 100, 20)
@@ -167,6 +170,8 @@ $Label9 = GUICtrlCreateLabel("End Point X", 10, 160)
 $Label9b = GUICtrlCreateInput("", 100, 160, 100, 20)
 $Label10 = GUICtrlCreateLabel("End Point Y", 10, 180)
 $Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
+$Label11 = _GUICtrlButton_Create ( $hGUI, "Cascade Now!", 10, 430, 100, 20)
+
 
 ;It is important to use _GUIListViewEx_Close when a enabled ListView is deleted to free the memory used
 ;                    by the $aGLVEx_Data array which shadows the ListView contents.
@@ -423,7 +428,62 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
     Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_NOTIFY
 
-#comments-start
-...
-...
-#comments-end
+;modified by Yibing
+;Last modified Feb 15, 2008
+MonitoInfo()
+
+Func MonitoInfo()
+    Const $DISPLAY_DEVICE_MIRRORING_DRIVER    = 0x00000008
+    Const $ENUM_CURRENT_SETTINGS = -1
+    Const $DISPLAY_DEVICE = "int;char[32];char[128];int;char[128];char[128]"
+    Const $DEVMODE = "byte[32];short;short;short;short;int;int[2];int;int" & _
+                    ";short;short;short;short;short;byte[32]" & _
+                    ";short;ushort;int;int;int;int"
+                    
+    Dim $MonitorPos[1][4]
+    $dev = 0
+    $id = 0
+    $dll = DllOpen("user32.dll")
+    $msg = ""
+
+    Dim $dd = DllStructCreate($DISPLAY_DEVICE)
+    DllStructSetData($dd, 1, DllStructGetSize($dd))
+
+    Dim $dm = DllStructCreate($DEVMODE)
+    DllStructSetData($dm, 4, DllStructGetSize($dm))
+
+    Do
+        $EnumDisplays = DllCall($dll, "int", "EnumDisplayDevices", _
+                "ptr", "NULL", _
+                "int", $dev, _
+                "ptr", DllStructGetPtr($dd), _
+                "int", 0)
+        $StateFlag = Number(StringMid(Hex(DllStructGetData($dd, 4)), 3))
+        If ($StateFlag <> $DISPLAY_DEVICE_MIRRORING_DRIVER) And ($StateFlag <> 0) Then;ignore virtual mirror displays
+            $id += 1
+            ReDim $MonitorPos[$id+1][5]
+            $EnumDisplaysEx = DllCall($dll, "int", "EnumDisplaySettings", _
+                    "str", DllStructGetData($dd, 2), _
+                    "int", $ENUM_CURRENT_SETTINGS, _
+                    "ptr", DllStructGetPtr($dm))
+            $MonitorPos[$id][0] = DllStructGetData($dm, 7, 1)
+            $MonitorPos[$id][1] = DllStructGetData($dm, 7, 2)
+            $MonitorPos[$id][2] = DllStructGetData($dm, 18)
+            $MonitorPos[$id][3] = DllStructGetData($dm, 19)
+			;MsgBox(0,"What's dm?",$dm)
+            $msg &= "Monitor " & ($id) & " start point:(" &  _
+                DllStructGetData($dm, 7, 1) & "," & _
+                DllStructGetData($dm, 7, 2) & ") " & @TAB & "Screen resolution: " & _
+                DllStructGetData($dm, 18) & "x" & _
+                DllStructGetData($dm, 19) & @LF
+        EndIf
+        $dev += 1
+    Until $EnumDisplays[0] = 0
+
+    $MonitorPos[0][0] = $id
+    DllClose($dll)
+
+    ;MsgBox(0,"Screen Info",$msg)
+    return $MonitorPos
+
+EndFunc
