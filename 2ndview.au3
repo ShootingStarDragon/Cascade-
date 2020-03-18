@@ -8,12 +8,16 @@
 #include <GuiImageList.au3>
 #include <GuiButton.au3>
 #include <EditConstants.au3>
+#include <WinAPI.au3>
+#include <WinAPISysWin.au3>
+#include <AutoItConstants.au3>
 
 ;set aIndexList of indicies so i can clear the checkboxes on 1st column
 Global $aIndexList[1]
 
 ;Retrieve a list of window handles.
 Local $aList = WinList("[REGEXPTITLE:(?i)(.+)]")
+;_ArrayDisplay($aList)
 #comments-start
 	The array returned is two-dimensional and is made up as follows:
 	$aArray[0][0] = Number of windows returned
@@ -118,7 +122,7 @@ $Monitors = _WinAPI_EnumDisplayMonitors()
 ;set window titles appropriately
 ;update the window title properly when new monitors are connected? nah just restart Cascade+
 
-Local $sHeaders = "Window Title|App Name(.exe)"
+Local $sHeaders = "Window Title|App Name(.exe)|Window Handle"
 
 
 For $intmon = 1 To $Monitors[0][0]
@@ -132,6 +136,7 @@ For $intmon = 1 To $Monitors[0][0]
 	
 ;remove empty init element in MonitorArray
 _ArryRemoveBlanks($MonitorArray)
+;_ArrayDisplay($MonitorArray)
 
 ;GUICreate ( "title" [, width [, height [, left = -1 [, top = -1 [, style = -1 [, exStyle = -1 [, parent = 0]]]]]]] )
 ;$hGUI = GUICreate("Cascade+",500,500,500,500,$WS_SIZEBOX)
@@ -160,7 +165,7 @@ For $i = 0 To UBound($MonitorArray) - 1
 	$MonitorCoords[$i+1][4] = MonitoInfo()[$i+1][1]
 Next
 
-_ArrayDisplay($MonitorCoords)
+;_ArrayDisplay($MonitorCoords)
 
 ; Create the combo
 $hCombo = GUICtrlCreateCombo("", 10, 10, 200, 20)
@@ -187,7 +192,8 @@ $Label9 = GUICtrlCreateLabel("End Point X", 10, 160)
 $Label9b = GUICtrlCreateInput("", 100, 160, 100, 20)
 $Label10 = GUICtrlCreateLabel("End Point Y", 10, 180)
 $Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
-$Label11 = _GUICtrlButton_Create ( $hGUI, "Cascade Now!", 10, 430, 100, 20)
+$Label11 = GUICtrlCreateButton ("Cascade Now!", 10, 430, 100, 20)
+$Label12 = GUICtrlCreateButton ("Refresh Window List", 120, 430, 120, 20)
 
 ;It is important to use _GUIListViewEx_Close when a enabled ListView is deleted to free the memory used
 ;                    by the $aGLVEx_Data array which shadows the ListView contents.
@@ -224,11 +230,28 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;MsgBox ( $MB_OK, "start of MY ROW", "")
 	;init with name
 	Local $blankStr = $aArrayFinal[$rowInt][0]
-	$blankStr &=  "|" & $aArrayFinal[$rowInt][2]
+	$blankStr &=  "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
 	;add title
 	;MsgBox ( $MB_OK, "STRPls", $blankStr)	
 	;$ItemID = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
 	$LVItem = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
+
+	#comments-start
+	GUICtrlDelete
+		Deletes a control.
+
+
+		GUICtrlDelete ( controlID )
+
+
+		Parameters
+		controlID The control identifier (controlID) as returned by a GUICtrlCreate...() function, or -1 for the last created control. 
+
+		Return Value
+		Success: 1. 
+		Failure: 0. 
+	#comments-end
+
 	;clear the checkbox
 	;_GUICtrlListView_SetItemState($hListView, $LVItem, 0, $LVIS_STATEIMAGEMASK)
 	
@@ -240,8 +263,8 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;add the checkboxes per monitor
 	For $imonitor = 0 To $Monitors[0][0]
 		;_GUICtrlListView_AddSubItem( $cListView_WindowList, $IndexCounter, "checkbox", $imonitor + 2, 1 ) ; Image index 0 = unchecked checkbox
-		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 2) 
 		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
+		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 4) 
 	Next
 	
 	;	MsgBox ( $MB_OK, "title", $IndexCounter & "|" & $LVItem)
@@ -295,13 +318,130 @@ While 1
 		Case $hCombo
 			$sComboRead = GUICtrlRead($hCombo)
 			GUICtrlSetData($Label6b, $sComboRead)
-		;;;;;_GUIListViewEx_Close($cListView_WindowListUDFVer)
-		;Label7
-		;GUICtrlSetData ( controlID, data [, default] )
-		MsgBox("search the array",)
+			;;;;;_GUIListViewEx_Close($cListView_WindowListUDFVer)
+			;Label7
+			;GUICtrlSetData ( controlID, data [, default] )
+			;MsgBox($IDOK ,"search the array",_ArraySearch($MonitorCoords,$sComboRead))
+			Local $monitorInt = _ArraySearch($MonitorCoords,$sComboRead)
+			GUICtrlSetData($Label7b, $MonitorCoords[$monitorInt][1])
+			GUICtrlSetData($Label8b, $MonitorCoords[$monitorInt][2])
+			GUICtrlSetData($Label9b, $MonitorCoords[$monitorInt][3])
+			GUICtrlSetData($Label10b,$MonitorCoords[$monitorInt][4])
+		;pressed the cascade button
+		Case $Label11
+			;get a list of all monitors and if you checked it then cascade it
+			Global $MonitorSegments[1][1]
+			;then data is:
+			;$MonitorSegments[0][0] -> number of windows to cascade on monitor 1
+			;$MonitorSegments[0][1] -> number of windows to cascade on monitor 2
+			;$MonitorSegments[1][0] is app name
+			;$MonitorSegments[1][1] is monitor to display on (monitor 1 or 2 or 3 etc)
+			;_ArrayDisplay($MonitorSegments)
+			
+			;init the number of windows to cascade per monitor
+			For $i = 0 To UBound($MonitorArray) - 1
+				If $i >= 0 Then
+					;add one more for one more monitor $MonitorArray
+					ReDim $MonitorSegments[UBound($MonitorSegments,1)][UBound($MonitorSegments,2)+1]
+					$MonitorSegments[0][$i] = 0
+				EndIf
+			Next
+			;_ArrayDisplay($MonitorSegments)
+			For $x = 0 To _GUICtrlListView_GetItemCount($cListView_WindowList) - 1
+				;go through all the checkboxes and if the checkbox has a 1 for image we increment the count in $MonitorSegments and add the HWND/monitor data to $MonitorSegments
+				For $i = 0 To UBound($MonitorArray) - 1 
+					If _GUICtrlListView_GetItemImage($cListView_WindowList, $x, $i + 3) == 1 Then
+						$MonitorSegments[0][$i] += 1
+						_ArrayAdd($MonitorSegments, _GUICtrlListView_GetItemText($cListView_WindowList, $x, 2) & "|" & $i)
+					EndIf
+				Next
+			Next
+			;_ArrayDisplay($MonitorSegments)
+			;if we're not the selected column set the subitem to empty checkbox
 
+			;for each monitor
+			For $i = 0 To UBound($MonitorArray) - 1 
+				;get total # of windows from $MonitorSegments[0][$i]
+				$Localmax = $MonitorSegments[0][$i]
+				;$y = 1 to skip the initial row
+				Local $OffsetValUNQ = 1
+				For $y = 1 To UBound($MonitorSegments,1) -1
+					If $MonitorSegments[$y][1] == $i Then
+						;move the window properly
+						#comments-start
+							WinGetPos ( "title" [, "text"] )
+								"title" = title/hWnd/class
+								Success: 	a 4-element array containing the following information:
+									$aArray[0] = X position
+									$aArray[1] = Y position
+									$aArray[2] = Width
+									$aArray[3] = Height
+								Failure: 	sets the @error flag to non-zero if the window is not found.
+						
+							WinMove ( "title", "text", x, y [, width [, height [, speed]]] )
+								title The title/hWnd/class of the window to move/resize. See Title special definition. 
+								text The text of the window to move/resize. See Text special definition. 
+								x X coordinate to move to. 
+								y Y coordinate to move to. 
+								width [optional] New width of the window. 
+								height [optional] New height of the window. 
+								speed [optional] the speed to move the windows in the range 1 (fastest) to 100 (slowest). If not defined the move is instantaneous. 
+						#comments-end
+						Local $OrigPos 
+						$currHWND = HWnd($MonitorSegments[$y][0])
+						$OrigPos = WinGetPos($currHWND)
+						;MsgBox ( $MB_OK, "check5", "does origpos even work?" & " " & $OrigPos)
+						$MonitorStartX = $MonitorCoords[$i+1][1]
+						$MonitorStartY = $MonitorCoords[$i+1][2]
+						$MonitorEndX = $MonitorCoords[$i+1][3]
+						$MonitorEndY = $MonitorCoords[$i+1][4]
+						;MsgBox ( $MB_OK, "check2", "check2" & $MonitorSegments[$y][0] & " " & (($MonitorStartX + $MonitorEndX)/$Localmax)*$OffsetValUNQ & " " &(($MonitorStartY + $MonitorEndY)/$Localmax)*$OffsetValUNQ)
+						;MsgBox ( $MB_OK, "check4", WinGetTitle($MonitorSegments[$y][0]) & " " &WinGetClientSize($MonitorSegments[$y][0]))
+						;_ArrayDisplay($MonitorSegments)
+						;MsgBox ( $MB_OK, "check5", $currHWND)
+						;activate the window
+						;WinActivate($currHWND)
+						;some windows return false value when maximized
+						;WinSetState($currHWND, '', @SW_RESTORE)
+						;MsgBox ( $MB_OK, "check6", WinGetTitle("[ACTIVE]"))
+						;MsgBox ( $MB_OK, "check7", WinGetTitle($currHWND))
+						;MsgBox ( $MB_OK, "check7b", WinGetPos($currHWND))
+						;ArrayDisplay(WinGetPos("Program Manager")) <-- WORKS
+						;_ArrayDisplay(WinGetPos($currHWND))
+						;MsgBox ( $MB_OK, "check8", WinGetHandle("C:\Users\RaptorPatrolCore\Desktop\2020 JOB HUNT\Cascade+\Cascade+.au3 - Notepad++"))
+						;$NewPos = WinMove($MonitorSegments[$y][0], "", (($MonitorStartX + $MonitorEndX)/$Localmax)*$OffsetValUNQ, (($MonitorStartY + $MonitorEndY)/$Localmax)*$OffsetValUNQ)
+						;$NewPos = _WinAPI_MoveWindow ( $hWnd, $iX, $iY, $iWidth, $iHeight [, $bRepaint = True] )
+						;WinGetClientSize ( "title" [, "text"] )
+						;$aArray[0] = Width of window's client area
+						;$aArray[1] = Height of window's client area
+						;$NewPos = _WinAPI_MoveWindow($MonitorSegments[$y][0], (($MonitorStartX + $MonitorEndX)/$Localmax)*$OffsetValUNQ, (($MonitorStartY + $MonitorEndY)/$Localmax)*$OffsetValUNQ, WinGetClientSize($MonitorSegments[$y][0])[0], WinGetClientSize($MonitorSegments[$y][0])[1])
+						$OffsetX = (($MonitorEndX - $MonitorStartX)/$Localmax)*$OffsetValUNQ + $MonitorStartX
+						$OffsetY = (($MonitorEndY - $MonitorStartY)/$Localmax)*$OffsetValUNQ + $MonitorStartY
+						
+						;MsgBox ( $MB_OK, "Pos " & " " & $Localmax, $OffsetValUNQ & " " & $OffsetX & " " & $OffsetY)
+						;;;;;MsgBox ( $MB_OK, "Pos " & " " & $Localmax, $MonitorStartX & " " & $MonitorStartY & " " & $MonitorEndX & " " & $MonitorEndY )
+						
+						WinSetState ($currHWND, "", @SW_SHOW)
+						WinSetState ($currHWND, "", @SW_RESTORE)
+						
+						;$NewPos = _WinAPI_MoveWindow($currHWND, $OffsetX, $OffsetY, 500, 500)
+						;WinMove ( "title", "text", x, y [, width [, height [, speed]]] )
+						$NewPos = WinMove(HWnd($currHWND), "", $OffsetX, $OffsetY)
+						;MsgBox($MB_OK, "ERR", WinWait("[CLASS:Notepad]", "", 1)) 
+						;$NewPos = WinMove(WinWait("[CLASS:Notepad]", "", 1), "", $OffsetX, $OffsetY)
+						
 
-
+						WinSetOnTop ($currHWND, "", 0)
+						;WinMove($currHWND, "", 0, 0, 200, 200)
+						;WinMove(WinWait("[TITLE:FREEK]", "", 1), "", 0, 0, 200, 200)
+						;MsgBox($MB_OK, "check3",$currHWND & " " & WinGetPos($currHWND)) 
+						;MsgBox($MB_OK, "ERR", _WinAPI_GetLastError()) 
+						$OffsetValUNQ += 1
+					EndIf
+				Next 
+			Next
+		Case $Label12
+			MsgBox ( $MB_OK, "Pos "," ")
 	EndSwitch
 WEnd
 
@@ -398,15 +538,16 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 						;EndIf
 						;MsgBox ( $MB_OK, "title", "click")
                         Return 1
-					ElseIf $aHit[0] >= 0 And $aHit[1] >= 2 Then                                                		   	   ; Item and subitem
+					ElseIf $aHit[0] >= 0 And $aHit[1] >= 3 Then                                                		   	   ; Item and subitem
+						;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
 						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      ; Get checkbox icon
 						_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) ; Toggle checkbox icon
 						;clear all other checkboxes so we force user to pick only one monitor (aka a window cannot exist in more than 1 monitor right?)
-						;know we have 2 initial columns + # of monitors so just iterate over # of monitors +2 to clear checkmarks AND skip $aHit[1].
+						;know we have 3 initial columns + # of monitors so just iterate over # of monitors +3 to clear checkmarks AND skip $aHit[1].
 						For $i = 0 To UBound($MonitorArray) - 1
 							;if we're not the selected column set the subitem to empty checkbox
-							If $i + 2 <> $aHit[1] Then
-								_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], 0, $i + 2 )
+							If $i + 3 <> $aHit[1] Then
+								_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], 0, $i + 3 )
 							EndIf
 						Next
 						;_GUICtrlListView_RedrawItems( $cListView_WindowList, $aHit[0], $aHit[0] )                      ; Redraw listview item
@@ -507,5 +648,9 @@ Func MonitoInfo()
 
     ;MsgBox(0,"Screen Info",$msg)
     return $MonitorPos
+EndFunc
 
+Func ListViewUpdateWindows($LVctrl)
+	;$LVctrl is the control of the List View
+	
 EndFunc

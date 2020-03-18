@@ -10,7 +10,7 @@ $Listview = GUICtrlCreateListView("filename", 0, 0, 200, 400);
 _GUICtrlListView_SetExtendedListViewStyle($Listview, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES))
 
 GUISetOnEvent($GUI_EVENT_CLOSE, "_Close")
-GUISetOnEvent($GUI_EVENT_PRIMARYDOWN,"_Arrange_List")
+GUISetOnEvent($GUI_EVENT_PRIMARYDOWN,_Arrange_List())
 
 _Create_List()
 
@@ -45,6 +45,7 @@ Func _Arrange_List()
         EndIf
         _GUICtrlListView_EndUpdate($Listview)
     EndIf
+	_WinAPI_RedrawWindow($Listview)
 EndFunc
 
 Func _Close()

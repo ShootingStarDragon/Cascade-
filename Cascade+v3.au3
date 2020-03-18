@@ -193,6 +193,7 @@ $Label9b = GUICtrlCreateInput("", 100, 160, 100, 20)
 $Label10 = GUICtrlCreateLabel("End Point Y", 10, 180)
 $Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
 $Label11 = GUICtrlCreateButton ("Cascade Now!", 10, 430, 100, 20)
+$Label12 = GUICtrlCreateButton ("Refresh Window List", 120, 430, 120, 20)
 
 ;It is important to use _GUIListViewEx_Close when a enabled ListView is deleted to free the memory used
 ;                    by the $aGLVEx_Data array which shadows the ListView contents.
@@ -231,9 +232,26 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	Local $blankStr = $aArrayFinal[$rowInt][0]
 	$blankStr &=  "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
 	;add title
-	;MsgBox ( $MB_OK, "STRPls", $blankStr)	
 	;$ItemID = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
 	$LVItem = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
+	;MsgBox ( $MB_OK, "LVItem", $LVItem)
+
+	#comments-start
+	GUICtrlDelete
+		Deletes a control.
+
+
+		GUICtrlDelete ( controlID )
+
+
+		Parameters
+		controlID The control identifier (controlID) as returned by a GUICtrlCreate...() function, or -1 for the last created control. 
+
+		Return Value
+		Success: 1. 
+		Failure: 0. 
+	#comments-end
+
 	;clear the checkbox
 	;_GUICtrlListView_SetItemState($hListView, $LVItem, 0, $LVIS_STATEIMAGEMASK)
 	
@@ -313,14 +331,12 @@ While 1
 		Case $Label11
 			;get a list of all monitors and if you checked it then cascade it
 			Global $MonitorSegments[1][1]
-			;_ArryRemoveBlanks($MonitorSegments)
 			;then data is:
 			;$MonitorSegments[0][0] -> number of windows to cascade on monitor 1
 			;$MonitorSegments[0][1] -> number of windows to cascade on monitor 2
 			;$MonitorSegments[1][0] is app name
 			;$MonitorSegments[1][1] is monitor to display on (monitor 1 or 2 or 3 etc)
 			;_ArrayDisplay($MonitorSegments)
-			;MsgBox ( $MB_OK, "this is gonna be a lot", "check")
 			
 			;init the number of windows to cascade per monitor
 			For $i = 0 To UBound($MonitorArray) - 1
@@ -342,12 +358,7 @@ While 1
 			Next
 			;_ArrayDisplay($MonitorSegments)
 			;if we're not the selected column set the subitem to empty checkbox
-			;WinMove ( "title" ( title/hWnd/class ), "text", x, y [, width [, height [, speed]]] )
-		
-			;data I need:
-				;order of cascading
-				;total number of windows to cascade per monitor
-				;x/y coords and stuff
+
 			;for each monitor
 			For $i = 0 To UBound($MonitorArray) - 1 
 				;get total # of windows from $MonitorSegments[0][$i]
@@ -429,10 +440,9 @@ While 1
 					EndIf
 				Next 
 			Next
-			
-			
-		;Case Else
-		;	MsgBox ( $MB_OK, "this is gonna be a lot", GUIGetMsg())
+		Case $Label12
+			ListViewUpdateWindows($cListView_WindowList)
+			;MsgBox ( $MB_OK, "Pos "," ")
 	EndSwitch
 WEnd
 
@@ -544,10 +554,7 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 						;_GUICtrlListView_RedrawItems( $cListView_WindowList, $aHit[0], $aHit[0] )                      ; Redraw listview item
 						_WinAPI_RedrawWindow($cListView_WindowList)
                     EndIf
-					
-					
-				
-				
+
                 Case $NM_DBLCLK ; Sent by a list-view control when the user double-clicks an item with the left mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
                     ;If DllStructGetData($tInfo, "Index") = $iIndex Then
@@ -639,5 +646,91 @@ Func MonitoInfo()
 
     ;MsgBox(0,"Screen Info",$msg)
     return $MonitorPos
+EndFunc
 
+Func ListViewUpdateWindows($LVctrl)
+	;$LVctrl is the control of the List View
+	;delete everything
+	;For $x = 0 To _GUICtrlListView_GetItemCount($LVctrl) - 1
+	For $x = 0 To UBound($aIndexList,1) - 1
+		;MsgBox($MB_OK, "",_GUICtrlListView_DeleteItem($LVctrl, $x))
+		_GUICtrlListView_DeleteItem($LVctrl, $aIndexList[$x])
+	Next
+	;_GUICtrlListView_DeleteAllItems($LVctrl)
+	;remake the listview
+	;$LVctrl = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200)
+	;_GUICtrlListView_SetExtendedListViewStyle($LVctrl, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES))
+	;$hListView = GUICtrlGetHandle( $LVctrl )  
+	;Local $hStateImageList = _GUICtrlListView_GetImageList( $LVctrl, 2 ) ; 2 = Image list with state images
+	; Add state ImageList as a normal ImageList
+	;_GUICtrlListView_SetImageList( $hListView, $hStateImageList, 1 ) ; 1 = Image list with small icons
+
+	;redo gathering windows
+	;how to clear array
+	;$array = 0	
+	$aIndexList = 0	
+	Global $aIndexList[1]
+
+	;Retrieve a list of window handles.
+	Local $aList = WinList("[REGEXPTITLE:(?i)(.+)]")
+	;$aListFiltered = 0
+	Local $aListFiltered[0]
+	;$aTitles = 0
+	Local $aTitles[0]
+	Local $aTitles[0]
+	
+	;filter winlist to get rid of windows with no titles and manually remove program manager
+	For $i = 1 to $aList[0][0]
+		;have to manually remove program manager I think
+		If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then
+			_ArrayAdd($aListFiltered, $aList[$i][1])
+			_ArrayAdd($aTitles, $aList[$i][0])
+		EndIf
+	Next
+	;make empty array
+	$aArrayFinal = 0
+	Local $aArrayFinal[UBound($aListFiltered, 1)][5]
+	;populate array
+	For $i = 0 to UBound($aListFiltered, 1)-1
+		;MsgBox ( $MB_OK, "title", $i & UBound($aListFiltered, 1) & WinGetTitle($aListFiltered[$i]) & $aListFiltered[$i] & _ProcessGetName($aListFiltered[$i]) & WinGetPos ($aListFiltered[$i]) & WinGetClientSize ($aListFiltered[$i]))
+		;name
+		;wingettitle fails on microsoft edge for some reason
+		;$aArrayFinal[$i][0] = WinGetTitle($aListFiltered[$i])
+		;$aArrayFinal[$i][0] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
+		$aArrayFinal[$i][0] = $aTitles[$i]
+		;HWND
+		$aArrayFinal[$i][1] = $aListFiltered[$i]
+		;exe name
+		$aArrayFinal[$i][2] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
+		;pos
+		$aArrayFinal[$i][3] = WinGetPos($aListFiltered[$i])[0] & "," & WinGetPos($aListFiltered[$i])[1]
+		;size
+		$aArrayFinal[$i][4] = WinGetClientSize($aListFiltered[$i])[0] & "," & WinGetClientSize($aListFiltered[$i])[1]
+	Next
+	For $rowInt = 0 To UBound($aArrayFinal, 1)-1
+		;init with name
+		Local $blankStr = $aArrayFinal[$rowInt][0]
+		$blankStr &=  "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
+		;add title
+		$LVItem = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
+		;MsgBox($MB_OK, "",$LVItem)
+		;HEADS UP
+		;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
+		;HEADS UP CONTROL != YOUR ID
+		_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
+		
+		;add the checkboxes per monitor
+		For $imonitor = 0 To $Monitors[0][0]
+			_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
+			_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 4) 
+		Next
+		
+		_ArrayAdd ( $aIndexList, $IndexCounter)
+		$IndexCounter += 1
+	Next
+	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
+	_ArrayDelete ( $aIndexList, 0 )
+	;_ArrayDisplay($aIndexList)
+	;_WinAPI_RedrawWindow($hListView)
+	;GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
 EndFunc
