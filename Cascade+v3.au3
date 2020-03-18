@@ -409,7 +409,7 @@ While 1
 						
 						;MsgBox ( $MB_OK, "Pos " & " " & $Localmax, $OffsetValUNQ & " " & $OffsetX & " " & $OffsetY)
 						;;;;;MsgBox ( $MB_OK, "Pos " & " " & $Localmax, $MonitorStartX & " " & $MonitorStartY & " " & $MonitorEndX & " " & $MonitorEndY )
-						;restore max or min window since move command fails on max windows
+						
 						WinSetState ($currHWND, "", @SW_SHOW)
 						WinSetState ($currHWND, "", @SW_RESTORE)
 						
@@ -420,12 +420,12 @@ While 1
 						;$NewPos = WinMove(WinWait("[CLASS:Notepad]", "", 1), "", $OffsetX, $OffsetY)
 						
 
-						WinSetOnTop ($currHWND, "", 1)
+						WinSetOnTop ($currHWND, "", 0)
 						;WinMove($currHWND, "", 0, 0, 200, 200)
 						;WinMove(WinWait("[TITLE:FREEK]", "", 1), "", 0, 0, 200, 200)
+						;MsgBox($MB_OK, "check3",$currHWND & " " & WinGetPos($currHWND)) 
+						;MsgBox($MB_OK, "ERR", _WinAPI_GetLastError()) 
 						$OffsetValUNQ += 1
-						MsgBox($MB_OK, "check3",$currHWND & " " & WinGetPos($currHWND)) 
-						MsgBox($MB_OK, "ERR", _WinAPI_GetLastError()) 
 					EndIf
 				Next 
 			Next
