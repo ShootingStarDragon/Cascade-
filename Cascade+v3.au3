@@ -118,7 +118,7 @@ $Monitors = _WinAPI_EnumDisplayMonitors()
 ;set window titles appropriately
 ;update the window title properly when new monitors are connected? nah just restart Cascade+
 
-Local $sHeaders = "Window Title|App Name(.exe)"
+Local $sHeaders = "Window Title|App Name(.exe)|Window Handle"
 
 
 For $intmon = 1 To $Monitors[0][0]
@@ -132,17 +132,36 @@ For $intmon = 1 To $Monitors[0][0]
 	
 ;remove empty init element in MonitorArray
 _ArryRemoveBlanks($MonitorArray)
+;_ArrayDisplay($MonitorArray)
 
 ;GUICreate ( "title" [, width [, height [, left = -1 [, top = -1 [, style = -1 [, exStyle = -1 [, parent = 0]]]]]]] )
 ;$hGUI = GUICreate("Cascade+",500,500,500,500,$WS_SIZEBOX)
 $hGUI = GUICreate("Cascade+",500,500,-1,-1,$WS_SIZEBOX )
 ;To be able to resize a GUI window it needs to have been created with the $WS_SIZEBOX and $WS_SYSMENU styles. See GUICreate().
 
+;init the coord datas for each monitor:
+; 0,0 -> empty
+; [ith monitor][start x coord][start y coord][end x coord][end y coord]
+dim $MonitorCoords[1][5]
+
 ; And here we get the elements (monitors) into a list
 $sList = ""
 For $i = 0 To UBound($MonitorArray) - 1
 	$sList &= "|" & $MonitorArray[$i]
+	;to add manually instead of the weird delimited version of _ArrayAdd
+	ReDim $MonitorCoords[UBound($MonitorCoords,1)+1][5]
+	;assume that monitors come in order I guess...
+	;init x/y coords 
+	$MonitorCoords[$i+1][0] = $MonitorArray[$i]
+	;initial x/y
+	$MonitorCoords[$i+1][1] = MonitoInfo()[$i+1][0]
+	$MonitorCoords[$i+1][2] = MonitoInfo()[$i+1][1] + 200
+	;final x/y
+	$MonitorCoords[$i+1][3] = MonitoInfo()[$i+1][0] + 200
+	$MonitorCoords[$i+1][4] = MonitoInfo()[$i+1][1]
 Next
+
+;_ArrayDisplay($MonitorCoords)
 
 ; Create the combo
 $hCombo = GUICtrlCreateCombo("", 10, 10, 200, 20)
@@ -162,7 +181,6 @@ $Label3b = GUICtrlCreateLabel("", 100, 80, 40, 20)
 $Label6 = GUICtrlCreateLabel("Selected Monitor", 10, 100)
 $Label6b = GUICtrlCreateLabel("", 100, 100, 200, 20)
 $Label7 = GUICtrlCreateLabel("Start Point X", 10, 120)
-;GUICtrlSetData 
 $Label7b = GUICtrlCreateInput("", 100, 120, 100, 20)
 $Label8 = GUICtrlCreateLabel("Start Point Y", 10, 140)
 $Label8b = GUICtrlCreateInput("", 100, 140, 100, 20)
@@ -170,8 +188,7 @@ $Label9 = GUICtrlCreateLabel("End Point X", 10, 160)
 $Label9b = GUICtrlCreateInput("", 100, 160, 100, 20)
 $Label10 = GUICtrlCreateLabel("End Point Y", 10, 180)
 $Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
-$Label11 = _GUICtrlButton_Create ( $hGUI, "Cascade Now!", 10, 430, 100, 20)
-
+$Label11 = GUICtrlCreateButton ("Cascade Now!", 10, 430, 100, 20)
 
 ;It is important to use _GUIListViewEx_Close when a enabled ListView is deleted to free the memory used
 ;                    by the $aGLVEx_Data array which shadows the ListView contents.
@@ -208,7 +225,7 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;MsgBox ( $MB_OK, "start of MY ROW", "")
 	;init with name
 	Local $blankStr = $aArrayFinal[$rowInt][0]
-	$blankStr &=  "|" & $aArrayFinal[$rowInt][2]
+	$blankStr &=  "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
 	;add title
 	;MsgBox ( $MB_OK, "STRPls", $blankStr)	
 	;$ItemID = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
@@ -224,8 +241,8 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;add the checkboxes per monitor
 	For $imonitor = 0 To $Monitors[0][0]
 		;_GUICtrlListView_AddSubItem( $cListView_WindowList, $IndexCounter, "checkbox", $imonitor + 2, 1 ) ; Image index 0 = unchecked checkbox
-		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 2) 
 		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
+		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 4) 
 	Next
 	
 	;	MsgBox ( $MB_OK, "title", $IndexCounter & "|" & $LVItem)
@@ -279,7 +296,68 @@ While 1
 		Case $hCombo
 			$sComboRead = GUICtrlRead($hCombo)
 			GUICtrlSetData($Label6b, $sComboRead)
-		;;;;;_GUIListViewEx_Close($cListView_WindowListUDFVer)
+			;;;;;_GUIListViewEx_Close($cListView_WindowListUDFVer)
+			;Label7
+			;GUICtrlSetData ( controlID, data [, default] )
+			;MsgBox($IDOK ,"search the array",_ArraySearch($MonitorCoords,$sComboRead))
+			Local $monitorInt = _ArraySearch($MonitorCoords,$sComboRead)
+			GUICtrlSetData($Label7b, $MonitorCoords[$monitorInt][1])
+			GUICtrlSetData($Label8b, $MonitorCoords[$monitorInt][2])
+			GUICtrlSetData($Label9b, $MonitorCoords[$monitorInt][3])
+			GUICtrlSetData($Label10b,$MonitorCoords[$monitorInt][4])
+		;pressed the cascade button
+		Case $Label11
+			;get a list of all monitors and if you checked it then cascade it
+			Global $MonitorSegments[1][1]
+			;_ArryRemoveBlanks($MonitorSegments)
+			;then data is:
+			;$MonitorSegments[0][0] -> number of windows to cascade on monitor 1
+			;$MonitorSegments[0][1] -> number of windows to cascade on monitor 2
+			;$MonitorSegments[1][0] is app name
+			;$MonitorSegments[1][1] is monitor to display on (monitor 1 or 2 or 3 etc)
+			;_ArrayDisplay($MonitorSegments)
+			;MsgBox ( $MB_OK, "this is gonna be a lot", "check")
+			
+			;init the number of windows to cascade per monitor
+			For $i = 0 To UBound($MonitorArray) - 1
+				If $i >= 0 Then
+					;add one more for one more monitor $MonitorArray
+					ReDim $MonitorSegments[UBound($MonitorSegments,1)][UBound($MonitorSegments,2)+1]
+					$MonitorSegments[0][$i] = 0
+				EndIf
+			Next
+			_ArrayDisplay($MonitorSegments)
+			For $x = 0 To _GUICtrlListView_GetItemCount($cListView_WindowList) - 1
+				;go through all the checkboxes and if the checkbox has a 1 for image we increment the count in $MonitorSegments and add the HWND/monitor data to $MonitorSegments
+				For $i = 0 To UBound($MonitorArray) - 1 
+					If _GUICtrlListView_GetItemImage($cListView_WindowList, $x, $i + 3) == 1 Then
+						$MonitorSegments[0][$i] += 1
+						_ArrayAdd($MonitorSegments, _GUICtrlListView_GetItemText($cListView_WindowList, $x, 2) & "|" & $i)
+					EndIf
+				Next
+			Next
+			_ArrayDisplay($MonitorSegments)
+			;if we're not the selected column set the subitem to empty checkbox
+			;WinMove ( "title" ( title/hWnd/class ), "text", x, y [, width [, height [, speed]]] )
+		
+			;data I need:
+				;order of cascading
+				;total number of windows to cascade per monitor
+				;x/y coords and stuff
+			;for each monitor
+			For $i = 0 To UBound($MonitorArray) - 1 
+				;get total # of windows from $MonitorSegments[0][$i]
+				$localmax = $MonitorSegments[0][$i]
+				For $y = 0 To UBound($MonitorSegments,1) -1
+					If $MonitorSegments[$y][1] == $i Then
+						;move the window properly
+					EndIf
+				Next 
+			Next
+			
+			
+		;Case Else
+		;	MsgBox ( $MB_OK, "this is gonna be a lot", GUIGetMsg())
 	EndSwitch
 WEnd
 
@@ -376,15 +454,16 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 						;EndIf
 						;MsgBox ( $MB_OK, "title", "click")
                         Return 1
-					ElseIf $aHit[0] >= 0 And $aHit[1] >= 2 Then                                                		   	   ; Item and subitem
+					ElseIf $aHit[0] >= 0 And $aHit[1] >= 3 Then                                                		   	   ; Item and subitem
+						;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
 						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      ; Get checkbox icon
 						_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) ; Toggle checkbox icon
 						;clear all other checkboxes so we force user to pick only one monitor (aka a window cannot exist in more than 1 monitor right?)
-						;know we have 2 initial columns + # of monitors so just iterate over # of monitors +2 to clear checkmarks AND skip $aHit[1].
+						;know we have 3 initial columns + # of monitors so just iterate over # of monitors +3 to clear checkmarks AND skip $aHit[1].
 						For $i = 0 To UBound($MonitorArray) - 1
 							;if we're not the selected column set the subitem to empty checkbox
-							If $i + 2 <> $aHit[1] Then
-								_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], 0, $i + 2 )
+							If $i + 3 <> $aHit[1] Then
+								_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], 0, $i + 3 )
 							EndIf
 						Next
 						;_GUICtrlListView_RedrawItems( $cListView_WindowList, $aHit[0], $aHit[0] )                      ; Redraw listview item
@@ -430,11 +509,11 @@ EndFunc   ;==>WM_NOTIFY
 
 ;modified by Yibing
 ;Last modified Feb 15, 2008
-MonitoInfo()
+;MonitoInfo()
 
 Func MonitoInfo()
-    Const $DISPLAY_DEVICE_MIRRORING_DRIVER    = 0x00000008
-    Const $ENUM_CURRENT_SETTINGS = -1
+    Const $DISPLAY_DEVICE_MIRRORING_DRIVER_B    = 0x00000008
+    Const $ENUM_CURRENT_SETTINGS_B = -1
     Const $DISPLAY_DEVICE = "int;char[32];char[128];int;char[128];char[128]"
     Const $DEVMODE = "byte[32];short;short;short;short;int;int[2];int;int" & _
                     ";short;short;short;short;short;byte[32]" & _
@@ -459,7 +538,7 @@ Func MonitoInfo()
                 "ptr", DllStructGetPtr($dd), _
                 "int", 0)
         $StateFlag = Number(StringMid(Hex(DllStructGetData($dd, 4)), 3))
-        If ($StateFlag <> $DISPLAY_DEVICE_MIRRORING_DRIVER) And ($StateFlag <> 0) Then;ignore virtual mirror displays
+        If ($StateFlag <> $DISPLAY_DEVICE_MIRRORING_DRIVER_B) And ($StateFlag <> 0) Then;ignore virtual mirror displays
             $id += 1
             ReDim $MonitorPos[$id+1][5]
             $EnumDisplaysEx = DllCall($dll, "int", "EnumDisplaySettings", _
