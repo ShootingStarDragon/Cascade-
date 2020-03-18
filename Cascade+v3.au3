@@ -8,12 +8,16 @@
 #include <GuiImageList.au3>
 #include <GuiButton.au3>
 #include <EditConstants.au3>
+#include <WinAPI.au3>
+#include <WinAPISysWin.au3>
+#include <AutoItConstants.au3>
 
 ;set aIndexList of indicies so i can clear the checkboxes on 1st column
 Global $aIndexList[1]
 
 ;Retrieve a list of window handles.
 Local $aList = WinList("[REGEXPTITLE:(?i)(.+)]")
+;_ArrayDisplay($aList)
 #comments-start
 	The array returned is two-dimensional and is made up as follows:
 	$aArray[0][0] = Number of windows returned
@@ -326,7 +330,7 @@ While 1
 					$MonitorSegments[0][$i] = 0
 				EndIf
 			Next
-			_ArrayDisplay($MonitorSegments)
+			;_ArrayDisplay($MonitorSegments)
 			For $x = 0 To _GUICtrlListView_GetItemCount($cListView_WindowList) - 1
 				;go through all the checkboxes and if the checkbox has a 1 for image we increment the count in $MonitorSegments and add the HWND/monitor data to $MonitorSegments
 				For $i = 0 To UBound($MonitorArray) - 1 
@@ -336,7 +340,7 @@ While 1
 					EndIf
 				Next
 			Next
-			_ArrayDisplay($MonitorSegments)
+			;_ArrayDisplay($MonitorSegments)
 			;if we're not the selected column set the subitem to empty checkbox
 			;WinMove ( "title" ( title/hWnd/class ), "text", x, y [, width [, height [, speed]]] )
 		
@@ -347,10 +351,81 @@ While 1
 			;for each monitor
 			For $i = 0 To UBound($MonitorArray) - 1 
 				;get total # of windows from $MonitorSegments[0][$i]
-				$localmax = $MonitorSegments[0][$i]
-				For $y = 0 To UBound($MonitorSegments,1) -1
+				$Localmax = $MonitorSegments[0][$i]
+				;$y = 1 to skip the initial row
+				Local $OffsetValUNQ = 1
+				For $y = 1 To UBound($MonitorSegments,1) -1
 					If $MonitorSegments[$y][1] == $i Then
 						;move the window properly
+						#comments-start
+							WinGetPos ( "title" [, "text"] )
+								"title" = title/hWnd/class
+								Success: 	a 4-element array containing the following information:
+									$aArray[0] = X position
+									$aArray[1] = Y position
+									$aArray[2] = Width
+									$aArray[3] = Height
+								Failure: 	sets the @error flag to non-zero if the window is not found.
+						
+							WinMove ( "title", "text", x, y [, width [, height [, speed]]] )
+								title The title/hWnd/class of the window to move/resize. See Title special definition. 
+								text The text of the window to move/resize. See Text special definition. 
+								x X coordinate to move to. 
+								y Y coordinate to move to. 
+								width [optional] New width of the window. 
+								height [optional] New height of the window. 
+								speed [optional] the speed to move the windows in the range 1 (fastest) to 100 (slowest). If not defined the move is instantaneous. 
+						#comments-end
+						Local $OrigPos 
+						$currHWND = HWnd($MonitorSegments[$y][0])
+						$OrigPos = WinGetPos($currHWND)
+						;MsgBox ( $MB_OK, "check5", "does origpos even work?" & " " & $OrigPos)
+						$MonitorStartX = $MonitorCoords[$i+1][1]
+						$MonitorStartY = $MonitorCoords[$i+1][2]
+						$MonitorEndX = $MonitorCoords[$i+1][3]
+						$MonitorEndY = $MonitorCoords[$i+1][4]
+						;MsgBox ( $MB_OK, "check2", "check2" & $MonitorSegments[$y][0] & " " & (($MonitorStartX + $MonitorEndX)/$Localmax)*$OffsetValUNQ & " " &(($MonitorStartY + $MonitorEndY)/$Localmax)*$OffsetValUNQ)
+						;MsgBox ( $MB_OK, "check4", WinGetTitle($MonitorSegments[$y][0]) & " " &WinGetClientSize($MonitorSegments[$y][0]))
+						;_ArrayDisplay($MonitorSegments)
+						;MsgBox ( $MB_OK, "check5", $currHWND)
+						;activate the window
+						;WinActivate($currHWND)
+						;some windows return false value when maximized
+						;WinSetState($currHWND, '', @SW_RESTORE)
+						;MsgBox ( $MB_OK, "check6", WinGetTitle("[ACTIVE]"))
+						;MsgBox ( $MB_OK, "check7", WinGetTitle($currHWND))
+						;MsgBox ( $MB_OK, "check7b", WinGetPos($currHWND))
+						;ArrayDisplay(WinGetPos("Program Manager")) <-- WORKS
+						;_ArrayDisplay(WinGetPos($currHWND))
+						;MsgBox ( $MB_OK, "check8", WinGetHandle("C:\Users\RaptorPatrolCore\Desktop\2020 JOB HUNT\Cascade+\Cascade+.au3 - Notepad++"))
+						;$NewPos = WinMove($MonitorSegments[$y][0], "", (($MonitorStartX + $MonitorEndX)/$Localmax)*$OffsetValUNQ, (($MonitorStartY + $MonitorEndY)/$Localmax)*$OffsetValUNQ)
+						;$NewPos = _WinAPI_MoveWindow ( $hWnd, $iX, $iY, $iWidth, $iHeight [, $bRepaint = True] )
+						;WinGetClientSize ( "title" [, "text"] )
+						;$aArray[0] = Width of window's client area
+						;$aArray[1] = Height of window's client area
+						;$NewPos = _WinAPI_MoveWindow($MonitorSegments[$y][0], (($MonitorStartX + $MonitorEndX)/$Localmax)*$OffsetValUNQ, (($MonitorStartY + $MonitorEndY)/$Localmax)*$OffsetValUNQ, WinGetClientSize($MonitorSegments[$y][0])[0], WinGetClientSize($MonitorSegments[$y][0])[1])
+						$OffsetX = (($MonitorEndX - $MonitorStartX)/$Localmax)*$OffsetValUNQ + $MonitorStartX
+						$OffsetY = (($MonitorEndY - $MonitorStartY)/$Localmax)*$OffsetValUNQ + $MonitorStartY
+						
+						;MsgBox ( $MB_OK, "Pos " & " " & $Localmax, $OffsetValUNQ & " " & $OffsetX & " " & $OffsetY)
+						;;;;;MsgBox ( $MB_OK, "Pos " & " " & $Localmax, $MonitorStartX & " " & $MonitorStartY & " " & $MonitorEndX & " " & $MonitorEndY )
+						;restore max or min window since move command fails on max windows
+						WinSetState ($currHWND, "", @SW_SHOW)
+						WinSetState ($currHWND, "", @SW_RESTORE)
+						
+						;$NewPos = _WinAPI_MoveWindow($currHWND, $OffsetX, $OffsetY, 500, 500)
+						;WinMove ( "title", "text", x, y [, width [, height [, speed]]] )
+						$NewPos = WinMove(HWnd($currHWND), "", $OffsetX, $OffsetY)
+						;MsgBox($MB_OK, "ERR", WinWait("[CLASS:Notepad]", "", 1)) 
+						;$NewPos = WinMove(WinWait("[CLASS:Notepad]", "", 1), "", $OffsetX, $OffsetY)
+						
+
+						WinSetOnTop ($currHWND, "", 1)
+						;WinMove($currHWND, "", 0, 0, 200, 200)
+						;WinMove(WinWait("[TITLE:FREEK]", "", 1), "", 0, 0, 200, 200)
+						$OffsetValUNQ += 1
+						MsgBox($MB_OK, "check3",$currHWND & " " & WinGetPos($currHWND)) 
+						MsgBox($MB_OK, "ERR", _WinAPI_GetLastError()) 
 					EndIf
 				Next 
 			Next
