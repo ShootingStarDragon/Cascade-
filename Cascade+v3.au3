@@ -124,13 +124,16 @@ $Monitors = _WinAPI_EnumDisplayMonitors()
 
 Local $sHeaders = "Window Title|App Name(.exe)|Window Handle"
 
+;keep track of controls so I can delete properly
+dim $LVItemArray[1][5]
 
 For $intmon = 1 To $Monitors[0][0]
 	;MsgBox($MB_OK, "title1", $intmon)
 	;_ArrayAdd($MonitorArray,_WinAPI_GetMonitorInfo($Monitors[$intmon][0])[3])
 	_ArrayAdd($MonitorArray,_WinAPI_GetMonitorInfo($Monitors[$intmon][0])[3])
 	$sHeaders &= "|Monitor " & $intmon
-	Next
+	redim $LVItemArray[UBound($LVItemArray, 1)][UBound($LVItemArray,2)+1]
+Next
 
 	
 	
@@ -226,6 +229,7 @@ GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Local $IndexCounter = 0
 
+
 For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;MsgBox ( $MB_OK, "start of MY ROW", "")
 	;init with name
@@ -260,13 +264,15 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;HEADS UP CONTROL != YOUR ID
 	_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
 	
+	$LVItemArrayItem =  $LVItem & "|" & $blankStr
 	;add the checkboxes per monitor
 	For $imonitor = 0 To $Monitors[0][0]
 		;_GUICtrlListView_AddSubItem( $cListView_WindowList, $IndexCounter, "checkbox", $imonitor + 2, 1 ) ; Image index 0 = unchecked checkbox
-		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
-		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 4) 
+		;_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
+		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3 + $imonitor) 
+		$LVItemArrayItem &= "|" & 0
 	Next
-	
+	_ArrayAdd($LVItemArray, $LVItemArrayItem)
 	;	MsgBox ( $MB_OK, "title", $IndexCounter & "|" & $LVItem)
 	
 	;;$aIndexList[$rowInt] = $LVItem
@@ -285,7 +291,8 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	$IndexCounter += 1
 Next
 _ArrayDelete ( $aIndexList, 0 )
-;_ArrayDisplay ($aIndexList )
+_ArrayDelete ( $LVItemArray, 0 )
+_ArrayDisplay ($LVItemArray)
 
 ;redraw everything so checkboxes get removed
 _WinAPI_RedrawWindow($hListView)
@@ -364,7 +371,7 @@ While 1
 				;get total # of windows from $MonitorSegments[0][$i]
 				$Localmax = $MonitorSegments[0][$i]
 				;$y = 1 to skip the initial row
-				Local $OffsetValUNQ = 1
+				Local $OffsetValUNQ = 0
 				For $y = 1 To UBound($MonitorSegments,1) -1
 					If $MonitorSegments[$y][1] == $i Then
 						;move the window properly
@@ -543,12 +550,15 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 						;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
 						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      ; Get checkbox icon
 						_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) ; Toggle checkbox icon
+						;update the LVItemArray array
+						$LVItemArray[$aHit[0]][$aHit] = $iIcon
+						;_ArrayDisplay($LVItemArray) <--- this freezes up
 						;clear all other checkboxes so we force user to pick only one monitor (aka a window cannot exist in more than 1 monitor right?)
 						;know we have 3 initial columns + # of monitors so just iterate over # of monitors +3 to clear checkmarks AND skip $aHit[1].
 						For $i = 0 To UBound($MonitorArray) - 1
 							;if we're not the selected column set the subitem to empty checkbox
 							If $i + 3 <> $aHit[1] Then
-								_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], 0, $i + 3 )
+								_GUICtrlListView_SetItemImage($cListView_WindowList, $aHit[0], 0, $i + 3 )
 							EndIf
 						Next
 						;_GUICtrlListView_RedrawItems( $cListView_WindowList, $aHit[0], $aHit[0] )                      ; Redraw listview item
@@ -650,12 +660,12 @@ EndFunc
 
 Func ListViewUpdateWindows($LVctrl)
 	;$LVctrl is the control of the List View
+	;_ArrayDisplay($LVItemArray)
 	;delete everything
-	;For $x = 0 To _GUICtrlListView_GetItemCount($LVctrl) - 1
-	For $x = 0 To UBound($aIndexList,1) - 1
-		;MsgBox($MB_OK, "",_GUICtrlListView_DeleteItem($LVctrl, $x))
-		_GUICtrlListView_DeleteItem($LVctrl, $aIndexList[$x])
+	For $x = 0 To UBound($LVItemArray,1) - 1
+		GUICtrlDelete ( $LVItemArray[$x][0])
 	Next
+	;_ArrayDisplay($LVItemArray)
 	;_GUICtrlListView_DeleteAllItems($LVctrl)
 	;remake the listview
 	;$LVctrl = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200)
@@ -677,7 +687,6 @@ Func ListViewUpdateWindows($LVctrl)
 	Local $aListFiltered[0]
 	;$aTitles = 0
 	Local $aTitles[0]
-	Local $aTitles[0]
 	
 	;filter winlist to get rid of windows with no titles and manually remove program manager
 	For $i = 1 to $aList[0][0]
@@ -690,6 +699,9 @@ Func ListViewUpdateWindows($LVctrl)
 	;make empty array
 	$aArrayFinal = 0
 	Local $aArrayFinal[UBound($aListFiltered, 1)][5]
+	$IndexCounter = 0
+	#comments-start
+	#comments-end
 	;populate array
 	For $i = 0 to UBound($aListFiltered, 1)-1
 		;MsgBox ( $MB_OK, "title", $i & UBound($aListFiltered, 1) & WinGetTitle($aListFiltered[$i]) & $aListFiltered[$i] & _ProcessGetName($aListFiltered[$i]) & WinGetPos ($aListFiltered[$i]) & WinGetClientSize ($aListFiltered[$i]))
@@ -707,13 +719,16 @@ Func ListViewUpdateWindows($LVctrl)
 		;size
 		$aArrayFinal[$i][4] = WinGetClientSize($aListFiltered[$i])[0] & "," & WinGetClientSize($aListFiltered[$i])[1]
 	Next
+	dim $ArrayCheckThis[1][5]
 	For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 		;init with name
 		Local $blankStr = $aArrayFinal[$rowInt][0]
 		$blankStr &=  "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
 		;add title
 		$LVItem = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
-		;MsgBox($MB_OK, "",$LVItem)
+		;$IndexCounter = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
+		;MsgBox($MB_OK, "Indexcounter does not match item index...", $blankStr & "|" & $LVItem & "|" & $IndexCounter)
+		_ArrayAdd($ArrayCheckThis,$blankStr & "|" & $IndexCounter)
 		;HEADS UP
 		;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
 		;HEADS UP CONTROL != YOUR ID
@@ -721,16 +736,28 @@ Func ListViewUpdateWindows($LVctrl)
 		
 		;add the checkboxes per monitor
 		For $imonitor = 0 To $Monitors[0][0]
-			_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
-			_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 4) 
+			;_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
+			_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, $LVItemArray[$aHit[0]][$aHit], 3 + $imonitor) 
 		Next
 		
 		_ArrayAdd ( $aIndexList, $IndexCounter)
 		$IndexCounter += 1
 	Next
+	;_ArrayDisplay($ArrayCheckThis)
 	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
 	_ArrayDelete ( $aIndexList, 0 )
 	;_ArrayDisplay($aIndexList)
 	;_WinAPI_RedrawWindow($hListView)
 	;GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
+	
+EndFunc
+
+Func _ArraySearchDimension( $aTargetArray, $dimcoord, $val)
+	For $x = 0 in UBound($aTargetArray, $dimcoord)
+		;problem is you have to fix the dimcoord then move through all the other coords
+		If $aTargetArray[]???? == $val
+		Return $x
+	Next
+	;SetError ( code [, extended = 0 [, return value]] )
+	SetError ( "_ArraySearchDimension failed")
 EndFunc
