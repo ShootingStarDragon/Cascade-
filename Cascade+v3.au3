@@ -550,10 +550,10 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 						;EndIf
 						;MsgBox ( $MB_OK, "title", "click")
                         Return 1
-					ElseIf $aHit[0] >= 0 And $aHit[1] >= 3 Then                                                		   	   ; Item and subitem
+					ElseIf $aHit[0] >= 0 And $aHit[1] >= 3 Then                                                		   	    ; Item and subitem
 						;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
-						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      ; Get checkbox icon
-						_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) ; Toggle checkbox icon
+						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      		; Get checkbox icon
+						_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) 		; Toggle checkbox icon
 						;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1] & "|" & $iIcon)
 						;MsgBox($MB_OK, "LVItemArray update", $LVItemArray[$aHit[0]][1] & "|" & $LVItemArray[$aHit[0]][4] & "|" & $LVItemArray[$aHit[0]][5])
 						;MsgBox($MB_OK, "LVItemArray update", $aHit[0] & "|" & $aHit[1]+1 & "|" & Mod($iIcon + 1, 2))
@@ -563,11 +563,16 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 						;MsgBox($MB_OK, "LVItemArray update", "ahitcoords are?" & $aHit[0] & "|" & $aHit[1]+1 & "|" & $LVItemArray[$aHit[0]][1] & "|" & $LVItemArray[$aHit[0]][4] & "|" & $LVItemArray[$aHit[0]][5] & "|" & $LVItemArray[$aHit[0]][$aHit[1]+1])
 						;_ArrayDisplay($LVItemArray) <--- this freezes up
 						;clear all other checkboxes so we force user to pick only one monitor (aka a window cannot exist in more than 1 monitor right?)
+						
+						;MsgBox($MB_OK, "title", $aHit)
 						;know we have 3 initial columns + # of monitors so just iterate over # of monitors +3 to clear checkmarks AND skip $aHit[1].
 						For $i = 0 To UBound($MonitorArray) - 1
 							;if we're not the selected column set the subitem to empty checkbox
 							If $i + 3 <> $aHit[1] Then
 								_GUICtrlListView_SetItemImage($cListView_WindowList, $aHit[0], 0, $i + 3 )
+								MsgBox($MB_OK, "LVItemArray check the entire fucking row", $i & "|" & $aHit[0] & "|" & $aHit[1] & "|" & $LVItemArray[$aHit[0]][0] & "|" & $LVItemArray[$aHit[0]][1] & "|" & $LVItemArray[$aHit[0]][2] & "|" & $LVItemArray[$aHit[0]][3] & "|" & $LVItemArray[$aHit[0]][4] & "|" & $LVItemArray[$aHit[0]][5])
+								;$LVItemArray[$aHit[0]][$aHit[1]+1+$i] = 0
+								$LVItemArray[$aHit[0]][$i+4] = 0
 							EndIf
 						Next
 						;_GUICtrlListView_RedrawItems( $cListView_WindowList, $aHit[0], $aHit[0] )                      ; Redraw listview item
@@ -780,6 +785,7 @@ Func ListViewUpdateWindows($LVctrl)
 	;_ArrayDisplay($LVItemArray)
 	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
 	_ArrayDelete ( $aIndexList, 0 )
+	_ArrayDelete ( $LVItemArray, 0 )
 	;_ArrayDisplay($aIndexList)
 	;_WinAPI_RedrawWindow($hListView)
 	;GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
