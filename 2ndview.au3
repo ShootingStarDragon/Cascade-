@@ -195,9 +195,10 @@ $Label9 = GUICtrlCreateLabel("End Point X", 10, 160)
 $Label9b = GUICtrlCreateInput("", 100, 160, 100, 20)
 $Label10 = GUICtrlCreateLabel("End Point Y", 10, 180)
 $Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
-$Label11 = GUICtrlCreateButton ("Cascade Now!", 10, 430, 100, 20)
-$Label12 = GUICtrlCreateButton ("Refresh Window List", 120, 430, 120, 20)
-$Label13 = GUICtrlCreateButton ("CHECK ARRAY", 120, 450, 120, 20)
+$Label11 = GUICtrlCreateButton("Cascade Now!", 10, 430, 100, 20)
+$Label12 = GUICtrlCreateButton("Refresh Window List", 120, 430, 120, 20)
+$Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20)
+$Label14 = GUICtrlCreateButton("Update Coordinates", 220, 120, 120, 20)
 
 ;It is important to use _GUIListViewEx_Close when a enabled ListView is deleted to free the memory used
 ;                    by the $aGLVEx_Data array which shadows the ListView contents.
@@ -294,7 +295,7 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 Next
 _ArrayDelete($aIndexList, 0)
 _ArrayDelete($LVItemArray, 0)
-_ArrayDisplay($LVItemArray)
+;_ArrayDisplay($LVItemArray)
 
 ;redraw everything so checkboxes get removed
 _WinAPI_RedrawWindow($hListView)
@@ -454,6 +455,8 @@ While 1
 			;MsgBox ( $MB_OK, "Pos "," ")
 		Case $Label13
 			_ArrayDisplay($LVItemArray)
+		Case $Label14
+			;GUICtrlRead($idFile)
 	EndSwitch
 WEnd
 
@@ -674,7 +677,7 @@ EndFunc
 
 Func ListViewUpdateWindows($LVctrl)
 	;$LVctrl is the control of the List View
-	_ArrayDisplay($LVItemArray)
+	;_ArrayDisplay($LVItemArray)
 	;make copy of array
 	$LVItemArrayCopy = $LVItemArray
 	;delete everything
@@ -785,6 +788,7 @@ Func ListViewUpdateWindows($LVctrl)
 	;_ArrayDisplay($LVItemArray)
 	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
 	_ArrayDelete ( $aIndexList, 0 )
+	_ArrayDelete ( $LVItemArray, 0 )
 	;_ArrayDisplay($aIndexList)
 	;_WinAPI_RedrawWindow($hListView)
 	;GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
