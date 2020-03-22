@@ -731,7 +731,12 @@ Func ListViewUpdateWindows($LVctrl)
 		;size
 		$aArrayFinal[$i][4] = WinGetClientSize($aListFiltered[$i])[0] & "," & WinGetClientSize($aListFiltered[$i])[1]
 	Next
-	dim $LVItemArray[1][5]
+	dim $LVItemArray[1][4]
+	;make array bigger depending on # of monitors
+	For $imonitor = 0 To $Monitors[0][0]-1
+		;_ArrayDisplay($LVItemArray)
+		Redim $LVItemArray[1][UBound($LVItemArray,2)+1]
+	Next
 	For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 		;init with name
 		Local $blankStr = $aArrayFinal[$rowInt][0]
@@ -740,7 +745,7 @@ Func ListViewUpdateWindows($LVctrl)
 		$LVItem = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
 		;$IndexCounter = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
 		;MsgBox($MB_OK, "Indexcounter does not match item index...", $blankStr & "|" & $LVItem & "|" & $IndexCounter)
-		_ArrayAdd($LVItemArray,$blankStr & "|" & $IndexCounter)
+		_ArrayAdd($LVItemArray, $LVItem & "|" & $blankStr )
 		;HEADS UP
 		;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
 		;HEADS UP CONTROL != YOUR ID
@@ -755,11 +760,17 @@ Func ListViewUpdateWindows($LVctrl)
 			;_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
 			$ExistenceCheck = _ArraySearch($LVItemArrayCopy, $aArrayFinal[$rowInt][1])
 			If $ExistenceCheck <> -1 Then
+				;_ArrayDisplay($LVItemArray)
 				;MsgBox($MB_OK, "", $ExistenceCheck & "|" & $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor])
 				_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor], 3 + $imonitor)
+				;MsgBox($MB_OK, "title",UBound($LVItemArray,1)-1)
+				$LVItemArray[UBound($LVItemArray,1)-1][4 + $imonitor] = $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor]
 			;if you can't find it just set as blank
 			Else
+				;_ArrayDisplay($LVItemArray)
+				;MsgBox($MB_OK, "title",UBound($LVItemArray,1)-1)
 				_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 3 + $imonitor)
+				$LVItemArray[UBound($LVItemArray,1)-1][4 + $imonitor] = 0
 			EndIf
 		Next
 		;_WinAPI_RedrawWindow($LVctrl)
