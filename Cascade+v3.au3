@@ -586,7 +586,7 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 							;if we're not the selected column set the subitem to empty checkbox
 							If $i + 3 <> $aHit[1] Then
 								_GUICtrlListView_SetItemImage($cListView_WindowList, $aHit[0], 0, $i + 3 )
-								MsgBox($MB_OK, "LVItemArray check the entire fucking row", $i & "|" & $aHit[0] & "|" & $aHit[1] & "|" & $LVItemArray[$aHit[0]][0] & "|" & $LVItemArray[$aHit[0]][1] & "|" & $LVItemArray[$aHit[0]][2] & "|" & $LVItemArray[$aHit[0]][3] & "|" & $LVItemArray[$aHit[0]][4] & "|" & $LVItemArray[$aHit[0]][5])
+								;MsgBox($MB_OK, "LVItemArray check the entire fucking row", $i & "|" & $aHit[0] & "|" & $aHit[1] & "|" & $LVItemArray[$aHit[0]][0] & "|" & $LVItemArray[$aHit[0]][1] & "|" & $LVItemArray[$aHit[0]][2] & "|" & $LVItemArray[$aHit[0]][3] & "|" & $LVItemArray[$aHit[0]][4] & "|" & $LVItemArray[$aHit[0]][5])
 								;$LVItemArray[$aHit[0]][$aHit[1]+1+$i] = 0
 								$LVItemArray[$aHit[0]][$i+4] = 0
 							EndIf
