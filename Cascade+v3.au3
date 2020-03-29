@@ -2,7 +2,6 @@
 #include <WinAPIGdi.au3>
 #include <Array.au3>
 #include <Process.au3>
-#include "GUIListViewEx\GUIListViewEx.au3"
 #include <WindowsConstants.au3>
 #include <GuiListView.au3>
 #include <GuiImageList.au3>
@@ -11,6 +10,8 @@
 #include <WinAPI.au3>
 #include <WinAPISysWin.au3>
 #include <AutoItConstants.au3>
+
+;#include "GUIListViewEx\GUIListViewEx.au3"
 
 ;set aIndexList of indicies so i can clear the checkboxes on 1st column
 Global $aIndexList[1]
@@ -199,6 +200,7 @@ $Label11 = GUICtrlCreateButton("Cascade Now!", 10, 430, 100, 20)
 $Label12 = GUICtrlCreateButton("Refresh Window List", 120, 430, 120, 20)
 $Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20)
 $Label14 = GUICtrlCreateButton("Update Coordinates", 220, 120, 120, 20)
+$Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
 
 ;It is important to use _GUIListViewEx_Close when a enabled ListView is deleted to free the memory used
 ;                    by the $aGLVEx_Data array which shadows the ListView contents.
@@ -457,19 +459,42 @@ While 1
 			_ArrayDisplay($LVItemArray)
 		Case $Label14
 			;GUICtrlRead($idFile)
-			#comments-start
-			$sComboRead = GUICtrlRead($hCombo)
-			GUICtrlSetData($Label6b, $sComboRead)
-			;;;;;_GUIListViewEx_Close($cListView_WindowListUDFVer)
-			;Label7
-			;GUICtrlSetData ( controlID, data [, default] )
-			;MsgBox($IDOK ,"search the array",_ArraySearch($MonitorCoords,$sComboRead))
-			Local $monitorInt = _ArraySearch($MonitorCoords,$sComboRead)
-			GUICtrlSetData($Label7b, $MonitorCoords[$monitorInt][1])
-			GUICtrlSetData($Label8b, $MonitorCoords[$monitorInt][2])
-			GUICtrlSetData($Label9b, $MonitorCoords[$monitorInt][3])
-			GUICtrlSetData($Label10b,$MonitorCoords[$monitorInt][4])
-			#comments-end
+			;MsgBox($MB_OK ,"what is empty option for monitor?",GUICtrlRead($Label6b), String(GUICtrlRead($Label6b)) == String(""))
+			;MsgBox($MB_OK ,"what is empty option for monitor?",String(GUICtrlRead($Label6b)) == String(""))
+			;if no monitor is set, do nothing:
+			If String(GUICtrlRead($Label6b)) == String("") Then
+				MsgBox($MB_OK ,"pick a monitor","please select a monitor")
+			Else
+				;MsgBox($MB_OK ,"read all the coords:",GUICtrlRead($Label7b) & "|" & GUICtrlRead($Label8b) & "|" & GUICtrlRead($Label9b) & "|" & GUICtrlRead($Label10b) & "|" & GUICtrlRead($hCombo) & "|" & _ArraySearch($MonitorCoords,$sComboRead))
+				;_ArrayDisplay($MonitorCoords)				
+				$sComboRead = GUICtrlRead($hCombo)				
+				;GUICtrlSetData ( controlID, data [, default] )
+				;MsgBox($IDOK ,"search the array",_ArraySearch($MonitorCoords,$sComboRead))
+				Local $monitorInt = _ArraySearch($MonitorCoords,$sComboRead)
+				;monitorInt should be (# of that monitor+1): _ArraySearch($MonitorCoords,$sComboRead) gives you the current # so it's good enough
+				$MonitorCoords[$monitorInt][1] = GUICtrlRead($Label7b)
+				$MonitorCoords[$monitorInt][2] = GUICtrlRead($Label8b)
+				$MonitorCoords[$monitorInt][3] = GUICtrlRead($Label9b)
+				$MonitorCoords[$monitorInt][4] = GUICtrlRead($Label10b)
+				;_ArrayDisplay($MonitorCoords)				
+			EndIf 
+		Case $Label15
+			;reset data:
+			$MonitorCoords = 0
+			dim $MonitorCoords[1][5]
+			For $i = 0 To UBound($MonitorArray) - 1
+				;to add manually instead of the weird delimited version of _ArrayAdd
+				ReDim $MonitorCoords[UBound($MonitorCoords,1)+1][5]
+				;assume that monitors come in order I guess...
+				;init x/y coords 
+				$MonitorCoords[$i+1][0] = $MonitorArray[$i]
+				;initial x/y
+				$MonitorCoords[$i+1][1] = MonitoInfo()[$i+1][0]
+				$MonitorCoords[$i+1][2] = MonitoInfo()[$i+1][1] + 200
+				;final x/y
+				$MonitorCoords[$i+1][3] = MonitoInfo()[$i+1][0] + 200
+				$MonitorCoords[$i+1][4] = MonitoInfo()[$i+1][1]
+			Next
 	EndSwitch
 WEnd
 
