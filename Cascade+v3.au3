@@ -668,7 +668,9 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
 	;MsgBox($MB_OK, "did i release?", "maybe") $hGUI
     #forceref $iMsgID, $wParam
 	Global $g_hListView
-	Local $aPos = ControlGetPos($hWndGUI, "", $g_hListView)
+	;Local $aPos = ControlGetPos($hWndGUI, "", $g_hListView)
+	;Local $aPos = ControlGetPos($hWndGUI, "", $cListView_WindowList)
+	Local $aPos = ControlGetPos($hWndGUI, "", $hListView)
     Local $x = BitAND($lParam, 0xFFFF) - $aPos[0]
     Local $y = BitShift($lParam, 16) - $aPos[1]
 	_WinAPI_ReleaseCapture()
@@ -679,7 +681,15 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
 	DllStructSetData($tStruct_LVHITTESTINFO, "X", $x)
     DllStructSetData($tStruct_LVHITTESTINFO, "Y", $y)
 	;$g_aIndex[1] = _SendMessage(ControlGetHandle($hGUI, "", $cListView_WindowList), $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
-    $g_aIndex = _SendMessage($hListView, $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
+	;          _SendMessage ( $hWnd, $iMsg [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
+	;$g_aIndex = _SendMessage($hListView, $LVM_HITTEST, 0,              DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
+	;            _SendMessage ( $hWnd,  $iMsg          [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
+	;$g_aIndex = _SendMessage($cListView_WindowList, $LVM_HITTEST, 0, DllStructGetData ( $tStruct_LVHITTESTINFO, "iSubItem"), 0)
+	$g_aIndex = _SendMessage($hListView, $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
+	;$g_aIndex = DllStructGetData ( $tStruct_LVHITTESTINFO, "X")
+	;_SendMessage ( $hGUI, $LVM_HITTEST  [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
+	;DllStructGetData ( Struct, Element [, index = Default] )
+	;DllStructGetData ( $tStruct_LVHITTESTINFO, iItem)
 	MsgBox($MB_OK, "start index to end index", $initIndex & "|" & $g_aIndex)
 	;DllCall()
     Return $GUI_RUNDEFMSG
