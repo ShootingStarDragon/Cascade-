@@ -7,14 +7,13 @@
 #include <Misc.au3>
 
 #Region Globals *************************************************************************
-Global $g_ahDragImageList, $g_hListView, $g_bDragging = False, $g_iLV_Height
+Global $g_ahDragImageList, $g_hListView, $g_bDragging = False, $g_iLV_Height, $initIndex
 Global $g_aIndex[2] ; from and to
 
 Global Const $g_iDebugIt = 1
 
 #EndRegion Globals *************************************************************************
 
-GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
 
 $theGUI = GUICreate("", 200, 400)
 GUISetState(@SW_SHOW)
@@ -30,12 +29,16 @@ _GUICtrlListView_SetExtendedListViewStyle($Listview, BitOR($LVS_EX_GRIDLINES, $L
 
 _Create_List()
 
+GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
+GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
+
+
 While 1
 	Switch GUIGetMsg()
 		Case $GUI_EVENT_CLOSE
 			Exit
-		;Case $GUI_EVENT_PRIMARYDOWN
-		;	_Arrange_List()
+		Case $GUI_EVENT_PRIMARYDOWN
+			_Arrange_List()
 	EndSwitch
 WEnd
 
@@ -115,7 +118,7 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
 	;the handle to the ListView control.
 	
     $g_aIndex[1] = _SendMessage($Listview, $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
-	MsgBox($MB_OK, "is this an index or what??", $g_aIndex[1])
+	MsgBox($MB_OK, "start index to end index", $initIndex & "|" & $g_aIndex[1])
     Local $iFlags = DllStructGetData($tStruct_LVHITTESTINFO, "Flags")
     ;------------------------------------------------------
     ; // Out of the ListView?
@@ -128,6 +131,7 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
     ;------------------------------------------------------
     ; make sure insert is at least 2 items above or below, don't want to create a duplicate
     ;------------------------------------------------------
+	#comments-start
     If $g_aIndex[0] < $g_aIndex[1] - 1 Or $g_aIndex[0] > $g_aIndex[1] + 1 Then
         Local $i_NewIndex = _LVInsertItem($g_aIndex[0], $g_aIndex[1])
         If @error Then Return SetError(-1, -1, $GUI_RUNDEFMSG)
@@ -145,8 +149,59 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
         ;------------------------------------------------------
         _GUICtrlListView_DeleteItem($g_hListView, $iFrom_index)
     EndIf
+	#comments-end
     Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_LBUTTONUP
 
+; WM_NOTIFY event handler
+; ------------------------------------------------------
+Func WM_NOTIFY($hWndGUI, $iMsgID, $wParam, $lParam)
+    #forceref $hWndGUI, $iMsgID, $wParam
+    Local $tNMHDR, $iCode, $x, $y, $tNMLISTVIEW, $hWndFrom, $tDraw, $iDrawStage, $iItemSpec
+    $tNMHDR = DllStructCreate($tagNMHDR, $lParam) ;NMHDR (hwndFrom, idFrom, code)
+    ;If @error Then Return
+    $iCode = DllStructGetData($tNMHDR, "Code")
+    $hWndFrom = DllStructGetData($tNMHDR, "hWndFrom")
+    Switch $hWndFrom
+        Case $Listview
+            Switch $iCode
+                Case $LVN_BEGINDRAG
+					$initIndex = _GUICtrlListView_GetHotItem($Listview)
+					;MsgBox($MB_OK, "is this an index or what??", $initIndex)
+					;MsgBox($MB_OK, "is this an index or what??", "test")
+                    
+                    $x = BitAND($lParam, 0xFFFF)
+                    $y = BitShift($lParam, 16)
+                    $tNMLISTVIEW = DllStructCreate($tagNMLISTVIEW, $lParam)
+                    $g_aIndex[0] = DllStructGetData($tNMLISTVIEW, "Item")
+                    $g_ahDragImageList = _GUICtrlListView_CreateDragImage($g_hListView, $g_aIndex[0])
+                    If @error Then Return SetError(-1, -1, $GUI_RUNDEFMSG)
 
+                    _GUIImageList_BeginDrag($g_ahDragImageList[0], 0, 0, 0)
 
+                    If @error Then Return SetError(-1, -1, $GUI_RUNDEFMSG)
+                    
+                    _GUIImageList_DragEnter($g_hListView, $x, $y)
+                    _WinAPI_SetCapture($hWndGUI)
+                    $g_bDragging = True
+                Case $NM_CUSTOMDRAW
+                    $tDraw = DllStructCreate($tagNMLVCUSTOMDRAW, $lParam)
+                    $iDrawStage = DllStructGetData($tDraw, "dwDrawStage")
+                    $iItemSpec = DllStructGetData($tDraw, "dwItemSpec")
+                    Switch $iDrawStage
+                        Case $CDDS_PREPAINT
+                    
+                            Return $CDRF_NOTIFYITEMDRAW
+                        Case $CDDS_ITEMPREPAINT
+                    
+                            If BitAND($iItemSpec, 1) = 1 Then
+                                DllStructSetData($tDraw, "clrTextBk", $CLR_AQUA)
+                            Else
+                                DllStructSetData($tDraw, "clrTextBk", $CLR_WHITE)
+                            EndIf
+                            Return $CDRF_NEWFONT
+                    EndSwitch
+            EndSwitch
+    EndSwitch
+    Return $GUI_RUNDEFMSG
+EndFunc   ;==>WM_NOTIFY
