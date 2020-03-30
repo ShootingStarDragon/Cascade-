@@ -10,6 +10,7 @@
 #include <WinAPI.au3>
 #include <WinAPISysWin.au3>
 #include <AutoItConstants.au3>
+#include <SendMessage.au3>
 
 ;#include "GUIListViewEx\GUIListViewEx.au3"
 
@@ -228,6 +229,7 @@ Local $hStateImageList = _GUICtrlListView_GetImageList( $cListView_WindowList, 2
 _GUICtrlListView_SetImageList( $hListView, $hStateImageList, 1 ) ; 1 = Image list with small icons
 ; Register WM_NOTIFY message handler
 GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
+;GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -653,6 +655,100 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
     EndSwitch
     Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_NOTIFY
+
+;this activates only when you drag the mouse heads up so NOT a single solo click
+; WM_LBUTTONUP event handler
+; ------------------------------------------------------
+Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
+	;MsgBox($MB_OK, "did i release?", "maybe") $hGUI
+    #forceref $iMsgID, $wParam
+    $g_bDragging = False
+    Local $aPos = ControlGetPos($hWndGUI, "", $hGUI)
+    Local $x = BitAND($lParam, 0xFFFF) - $aPos[0]
+    Local $y = BitShift($lParam, 16) - $aPos[1]
+    ;------------------------------------------------------
+    ; done dragging
+    ;------------------------------------------------------
+    _GUIImageList_DragLeave($hGUI)
+		;Unlocks the specified window and hides the drag image, allowing the window to be updated
+    _GUIImageList_EndDrag()
+		;Ends a drag operation
+    ;_GUIImageList_Destroy($g_ahDragImageList[0])
+		;Destroys an image list
+    _WinAPI_ReleaseCapture()
+		;Releases the mouse capture from a window in the current thread and restores normal mouse input processing
+    ;------------------------------------------------------
+    ; do hit test see if drag ended in the listview
+    ;------------------------------------------------------
+    Local $tStruct_LVHITTESTINFO = DllStructCreate($tagLVHITTESTINFO)
+
+    DllStructSetData($tStruct_LVHITTESTINFO, "X", $x)
+    DllStructSetData($tStruct_LVHITTESTINFO, "Y", $y)
+    $g_aIndex[1] = _SendMessage($hGUI, $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
+	MsgBox($MB_OK, "is this an index or what??", $g_aIndex[1])
+	#comments-start
+    #forceref $iMsgID, $wParam
+    $g_bDragging = False
+    Local $aPos = ControlGetPos($hWndGUI, "", $g_hListView)
+    Local $x = BitAND($lParam, 0xFFFF) - $aPos[0]
+    Local $y = BitShift($lParam, 16) - $aPos[1]
+    _DebugPrint("$x = " & $x)
+    _DebugPrint("$y = " & $y)
+    ;------------------------------------------------------
+    ; done dragging
+    ;------------------------------------------------------
+    _GUIImageList_DragLeave($g_hListView)
+		;Unlocks the specified window and hides the drag image, allowing the window to be updated
+    _GUIImageList_EndDrag()
+		;Ends a drag operation
+    ;_GUIImageList_Destroy($g_ahDragImageList[0])
+		;Destroys an image list
+    _WinAPI_ReleaseCapture()
+		;Releases the mouse capture from a window in the current thread and restores normal mouse input processing
+    ;------------------------------------------------------
+    ; do hit test see if drag ended in the listview
+    ;------------------------------------------------------
+    Local $tStruct_LVHITTESTINFO = DllStructCreate($tagLVHITTESTINFO)
+
+    DllStructSetData($tStruct_LVHITTESTINFO, "X", $x)
+    DllStructSetData($tStruct_LVHITTESTINFO, "Y", $y)
+    $g_aIndex[1] = _SendMessage($g_hListView, $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
+	MsgBox($MB_OK, "is this an index or what??", $g_aIndex[1])
+    Local $iFlags = DllStructGetData($tStruct_LVHITTESTINFO, "Flags")
+    _DebugPrint("$iFlags: " & $iFlags)
+    ;------------------------------------------------------
+    ; // Out of the ListView?
+    ;------------------------------------------------------
+    If $g_aIndex[1] == -1 Then Return $GUI_RUNDEFMSG
+    ;------------------------------------------------------
+    ; // Not in an item?
+    ;------------------------------------------------------
+    If BitAND($iFlags, $LVHT_ONITEMLABEL) == 0 And BitAND($iFlags, $LVHT_ONITEMSTATEICON) == 0 And BitAND($iFlags, $LVHT_ONITEMICON) = 0 Then Return $GUI_RUNDEFMSG
+    ;------------------------------------------------------
+    ; make sure insert is at least 2 items above or below, don't want to create a duplicate
+    ;------------------------------------------------------
+    If $g_aIndex[0] < $g_aIndex[1] - 1 Or $g_aIndex[0] > $g_aIndex[1] + 1 Then
+        _DebugPrint("To = " & $g_aIndex[1])
+        Local $i_NewIndex = _LVInsertItem($g_aIndex[0], $g_aIndex[1])
+        If @error Then Return SetError(-1, -1, $GUI_RUNDEFMSG)
+        Local $iFrom_index = $g_aIndex[0]
+        If $g_aIndex[0] > $g_aIndex[1] Then $iFrom_index = $g_aIndex[0] + 1
+        ;------------------------------------------------------
+        ; copy item and subitem(s) images, text, and state
+        ;------------------------------------------------------
+        For $x = 1 To _GUICtrlListView_GetColumnCount($g_hListView) - 1
+            _LVCopyItem($iFrom_index, $i_NewIndex, $x)
+            If @error Then Return SetError(-1, -1, $GUI_RUNDEFMSG)
+        Next
+        ;------------------------------------------------------
+        ; delete from
+        ;------------------------------------------------------
+        _GUICtrlListView_DeleteItem($g_hListView, $iFrom_index)
+    EndIf
+	#comments-end
+    Return $GUI_RUNDEFMSG
+EndFunc   ;==>WM_LBUTTONUP
+
 
 ;modified by Yibing
 ;Last modified Feb 15, 2008

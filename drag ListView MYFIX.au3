@@ -13,13 +13,16 @@ Global $g_aIndex[2] ; from and to
 Global Const $g_iDebugIt = 1
 
 #EndRegion Globals *************************************************************************
-#comments-start
-GUICreate("", 200, 400)
+
+$theGUI = GUICreate("", 200, 400)
 GUISetState(@SW_SHOW)
 
 GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
 
-$Listview = GUICtrlCreateListView("filename", 0, 0, 200, 400);
+;$Listview = GUICtrlCreateListView("filename", 0, 0, 200, 400);
+;GUICtrlCreateListView ( "text", left, top [, width [, height [, style = -1 [, exStyle = -1]]]] )
+$Listview = _GUICtrlListView_Create($theGUI, "filename", 0, 0, 200, 400);
+;_GUICtrlListView_Create ( $hWnd, $sHeaderText, $iX, $iY [, $iWidth = 150 [, $iHeight = 150 [, $iStyle = 0x0000000D [, $iExStyle = 0x00000000 [, $bCoInit = False]]]]] )
 _GUICtrlListView_SetExtendedListViewStyle($Listview, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES, $LVS_EX_TRACKSELECT))
 
 ;GUISetOnEvent($GUI_EVENT_CLOSE, "_Close")
@@ -45,7 +48,8 @@ Func _Create_List()
     Local $Item
     While $Item <> "XXXXXXXX"
         $Item = $Item & "X"
-        GUICtrlCreateListViewItem($Item, $Listview)
+        ;GUICtrlCreateListViewItem($Item, $Listview)
+        _GUICtrlListView_AddItem($Listview, $Item)
     Wend
 Endfunc
 
@@ -76,77 +80,8 @@ Func _Arrange_List()
     EndIf
 	_WinAPI_RedrawWindow($Listview)
 EndFunc
-#comments-end
 
-Opt("WinTitleMatchMode", 2)
 
-Example()
-
-Func Example()
-    Local Const $iImage_width = 20
-    Local Const $iImage_height = 20
-    Local $hImages, $hMain_GUI, $iIndex
-
-    $hMain_GUI = GUICreate("GuiImageList Begin Drag", 225, 400)
-
-    $g_hListView = _GUICtrlListView_Create($hMain_GUI, "Entry Name|Category", 5, 75, 220, 280, -1, BitOR($WS_EX_CLIENTEDGE, $WS_EX_STATICEDGE))
-    $g_iLV_Height = 280 - 75
-    _GUICtrlListView_SetColumnWidth($g_hListView, 0, 100)
-    _GUICtrlListView_SetColumnWidth($g_hListView, 1, 100)
-    ;_GUICtrlListView_SetExtendedListViewStyle($g_hListView, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES))
-    _GUICtrlListView_SetExtendedListViewStyle($g_hListView, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES))
-    ;------------------------------------------------------
-    ; Using subitem images
-    ;------------------------------------------------------
-    _GUICtrlListView_SetExtendedListViewStyle($g_hListView, BitOR($LVM_SETEXTENDEDLISTVIEWSTYLE, $LVS_EX_SUBITEMIMAGES))
-
-    ;------------------------------------------------------
-    ; create the image list
-    ;------------------------------------------------------
-    $hImages = _GUIImageList_Create($iImage_width, $iImage_height, 5, 1)
-    For $x = 1 To 21
-        _GUIImageList_AddIcon($hImages, @SystemDir & "\shell32.dll", $x)
-    Next
-
-    _GUICtrlListView_SetImageList($g_hListView, $hImages, $LVSIL_SMALL)
-
-    ;------------------------------------------------------
-    ;Register event functions
-    ;------------------------------------------------------
-    GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
-    GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
-    GUIRegisterMsg($WM_MOUSEMOVE, "WM_MOUSEMOVE")
-
-    ;------------------------------------------------------
-    ; add listview items with images
-    ;------------------------------------------------------
-    Local $y = 1
-    For $x = 0 To 9
-        $iIndex = _GUICtrlListView_AddItem($g_hListView, "Name " & $x + 1, $y) ; handle, string, image index
-        _GUICtrlListView_AddSubItem($g_hListView, $iIndex, "Category " & $x + 1, 1, $y + 1) ; handle, index, string, subitem, image index
-        $y += 2
-    Next
-
-    GUISetState(@SW_SHOW)
-
-    While 1
-
-        Switch GUIGetMsg()
-
-            ;-----------------------------------------------------------------------------------------
-            ;This case statement exits and updates code if needed
-            Case $GUI_EVENT_CLOSE
-                ExitLoop
-                ;-----------------------------------------------------------------------------------------
-                ;put all the misc. stuff here
-            Case Else
-                ;;;
-        EndSwitch
-    WEnd
-
-    _GUIImageList_Destroy($hImages)
-    GUIDelete()
-EndFunc   ;==>Example
 
 ; WM_MOUSEMOVE event handler
 ; ------------------------------------------------------
