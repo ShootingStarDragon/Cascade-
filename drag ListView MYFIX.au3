@@ -14,16 +14,16 @@ Global Const $g_iDebugIt = 1
 
 #EndRegion Globals *************************************************************************
 
+GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
+
 $theGUI = GUICreate("", 200, 400)
 GUISetState(@SW_SHOW)
-
-GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
 
 ;$Listview = GUICtrlCreateListView("filename", 0, 0, 200, 400);
 ;GUICtrlCreateListView ( "text", left, top [, width [, height [, style = -1 [, exStyle = -1]]]] )
 $Listview = _GUICtrlListView_Create($theGUI, "filename", 0, 0, 200, 400);
 ;_GUICtrlListView_Create ( $hWnd, $sHeaderText, $iX, $iY [, $iWidth = 150 [, $iHeight = 150 [, $iStyle = 0x0000000D [, $iExStyle = 0x00000000 [, $bCoInit = False]]]]] )
-_GUICtrlListView_SetExtendedListViewStyle($Listview, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES, $LVS_EX_TRACKSELECT))
+_GUICtrlListView_SetExtendedListViewStyle($Listview, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES));$LVS_EX_TRACKSELECT
 
 ;GUISetOnEvent($GUI_EVENT_CLOSE, "_Close")
 ;GUISetOnEvent($GUI_EVENT_PRIMARYDOWN,_Arrange_List())
@@ -34,8 +34,8 @@ While 1
 	Switch GUIGetMsg()
 		Case $GUI_EVENT_CLOSE
 			Exit
-		Case $GUI_EVENT_PRIMARYDOWN
-			_Arrange_List()
+		;Case $GUI_EVENT_PRIMARYDOWN
+		;	_Arrange_List()
 	EndSwitch
 WEnd
 
@@ -83,30 +83,6 @@ EndFunc
 
 
 
-; WM_MOUSEMOVE event handler
-; ------------------------------------------------------
-Func WM_MOUSEMOVE($hWndGUI, $iMsgID, $wParam, $lParam)
-    #forceref $iMsgID, $wParam
-    ;------------------------------------------------------
-    ; not dragging item we are done here
-    ;------------------------------------------------------
-    If $g_bDragging = False Then Return $GUI_RUNDEFMSG
-
-    ;------------------------------------------------------
-    ; update the image move
-    ;------------------------------------------------------
-    Local $aPos = ControlGetPos($hWndGUI, "", $g_hListView)
-    Local $x = BitAND($lParam, 0xFFFF) - $aPos[0]
-    Local $y = BitShift($lParam, 16) - $aPos[1]
-    If $y > $g_iLV_Height - 20 Then
-        _GUICtrlListView_Scroll($g_hListView, 0, $y)
-    ElseIf $y < 20 Then
-        _GUICtrlListView_Scroll($g_hListView, 0, $y * -1)
-    EndIf
-    _GUIImageList_DragMove($x, $y)
-    Return $GUI_RUNDEFMSG
-EndFunc   ;==>WM_MOUSEMOVE
-
 ;this activates only when you drag the mouse heads up so NOT a single solo click
 ; WM_LBUTTONUP event handler
 ; ------------------------------------------------------
@@ -117,8 +93,6 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
     Local $aPos = ControlGetPos($hWndGUI, "", $g_hListView)
     Local $x = BitAND($lParam, 0xFFFF) - $aPos[0]
     Local $y = BitShift($lParam, 16) - $aPos[1]
-    _DebugPrint("$x = " & $x)
-    _DebugPrint("$y = " & $y)
     ;------------------------------------------------------
     ; done dragging
     ;------------------------------------------------------
@@ -137,10 +111,12 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
 
     DllStructSetData($tStruct_LVHITTESTINFO, "X", $x)
     DllStructSetData($tStruct_LVHITTESTINFO, "Y", $y)
-    $g_aIndex[1] = _SendMessage($g_hListView, $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
+	; $g_hListView = _GUICtrlListView_Create
+	;the handle to the ListView control.
+	
+    $g_aIndex[1] = _SendMessage($Listview, $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
 	MsgBox($MB_OK, "is this an index or what??", $g_aIndex[1])
     Local $iFlags = DllStructGetData($tStruct_LVHITTESTINFO, "Flags")
-    _DebugPrint("$iFlags: " & $iFlags)
     ;------------------------------------------------------
     ; // Out of the ListView?
     ;------------------------------------------------------
@@ -153,7 +129,6 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
     ; make sure insert is at least 2 items above or below, don't want to create a duplicate
     ;------------------------------------------------------
     If $g_aIndex[0] < $g_aIndex[1] - 1 Or $g_aIndex[0] > $g_aIndex[1] + 1 Then
-        _DebugPrint("To = " & $g_aIndex[1])
         Local $i_NewIndex = _LVInsertItem($g_aIndex[0], $g_aIndex[1])
         If @error Then Return SetError(-1, -1, $GUI_RUNDEFMSG)
         Local $iFrom_index = $g_aIndex[0]
@@ -173,64 +148,5 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
     Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_LBUTTONUP
 
-; WM_NOTIFY event handler
-; ------------------------------------------------------
-Func WM_NOTIFY($hWndGUI, $iMsgID, $wParam, $lParam)
-    #forceref $hWndGUI, $iMsgID, $wParam
-    Local $tNMHDR, $iCode, $x, $y, $tNMLISTVIEW, $hWndFrom, $tDraw, $iDrawStage, $iItemSpec
-    $tNMHDR = DllStructCreate($tagNMHDR, $lParam) ;NMHDR (hwndFrom, idFrom, code)
-    If @error Then Return
-    $iCode = DllStructGetData($tNMHDR, "Code")
-    $hWndFrom = DllStructGetData($tNMHDR, "hWndFrom")
-    Switch $hWndFrom
-        Case $g_hListView
-            Switch $iCode
-                Case $LVN_BEGINDRAG
-                    _DebugPrint("$LVN_BEGINDRAG")
-                    $x = BitAND($lParam, 0xFFFF)
-                    $y = BitShift($lParam, 16)
-                    $tNMLISTVIEW = DllStructCreate($tagNMLISTVIEW, $lParam)
-                    $g_aIndex[0] = DllStructGetData($tNMLISTVIEW, "Item")
-                    $g_ahDragImageList = _GUICtrlListView_CreateDragImage($g_hListView, $g_aIndex[0])
-                    If @error Then Return SetError(-1, -1, $GUI_RUNDEFMSG)
 
-                    _GUIImageList_BeginDrag($g_ahDragImageList[0], 0, 0, 0)
-
-                    If @error Then Return SetError(-1, -1, $GUI_RUNDEFMSG)
-                    _DebugPrint("From = " & $g_aIndex[0])
-                    _GUIImageList_DragEnter($g_hListView, $x, $y)
-                    _WinAPI_SetCapture($hWndGUI)
-                    $g_bDragging = True
-                Case $NM_CUSTOMDRAW
-                    _DebugPrint("$NM_CUSTOMDRAW")
-                    $tDraw = DllStructCreate($tagNMLVCUSTOMDRAW, $lParam)
-                    $iDrawStage = DllStructGetData($tDraw, "dwDrawStage")
-                    $iItemSpec = DllStructGetData($tDraw, "dwItemSpec")
-                    Switch $iDrawStage
-                        Case $CDDS_PREPAINT
-                            _DebugPrint("$CDDS_PREPAINT")
-                            Return $CDRF_NOTIFYITEMDRAW
-                        Case $CDDS_ITEMPREPAINT
-                            _DebugPrint("$CDDS_ITEMPREPAINT")
-                            If BitAND($iItemSpec, 1) = 1 Then
-                                DllStructSetData($tDraw, "clrTextBk", $CLR_AQUA)
-                            Else
-                                DllStructSetData($tDraw, "clrTextBk", $CLR_WHITE)
-                            EndIf
-                            Return $CDRF_NEWFONT
-                    EndSwitch
-            EndSwitch
-    EndSwitch
-    Return $GUI_RUNDEFMSG
-EndFunc   ;==>WM_NOTIFY
-#EndRegion Event Function(s) **********************************************************************************************
-
-Func _DebugPrint($s_Text)
-    If Not $g_iDebugIt Then Return
-    $s_Text = StringReplace($s_Text, @CRLF, @CRLF & "-->")
-    ConsoleWrite("!===========================================================" & @CRLF & _
-            "+===========================================================" & @CRLF & _
-            "-->" & $s_Text & @CRLF & _
-            "+===========================================================" & @CRLF)
-EndFunc   ;==>_DebugPrint
 

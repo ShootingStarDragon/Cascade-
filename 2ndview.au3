@@ -4,7 +4,6 @@
 #include <SendMessage.au3>
 #include <WinAPISys.au3>
 #include <WindowsConstants.au3>
-#include <Misc.au3>
 
 #Region Globals *************************************************************************
 Global $g_ahDragImageList, $g_hListView, $g_bDragging = False, $g_iLV_Height
@@ -13,70 +12,6 @@ Global $g_aIndex[2] ; from and to
 Global Const $g_iDebugIt = 1
 
 #EndRegion Globals *************************************************************************
-#comments-start
-GUICreate("", 200, 400)
-GUISetState(@SW_SHOW)
-
-GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
-
-$Listview = GUICtrlCreateListView("filename", 0, 0, 200, 400);
-_GUICtrlListView_SetExtendedListViewStyle($Listview, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES, $LVS_EX_TRACKSELECT))
-
-;GUISetOnEvent($GUI_EVENT_CLOSE, "_Close")
-;GUISetOnEvent($GUI_EVENT_PRIMARYDOWN,_Arrange_List())
-
-_Create_List()
-
-While 1
-	Switch GUIGetMsg()
-		Case $GUI_EVENT_CLOSE
-			Exit
-		Case $GUI_EVENT_PRIMARYDOWN
-			_Arrange_List()
-	EndSwitch
-WEnd
-
-
-
-;MsgBox($MB_SYSTEMMODAL, "Information", "Hot Cursor Handle: 0x" & Hex(_GUICtrlListView_GetHotCursor($idListview)) & @CRLF & _
-;            "IsPtr = " & IsPtr(_GUICtrlListView_GetHotCursor($idListview)) & " IsHWnd = " & IsHWnd(_GUICtrlListView_GetHotCursor($idListview)))
-
-Func _Create_List()
-    Local $Item
-    While $Item <> "XXXXXXXX"
-        $Item = $Item & "X"
-        GUICtrlCreateListViewItem($Item, $Listview)
-    Wend
-Endfunc
-
-Func _Arrange_List()
-    $Selected = _GUICtrlListView_GetHotItem($Listview)
-	;_GUICtrlListView_CreateDragImage ( $Listview, $Selected )
-	;hotitem is the index of the selected item (starts from 0)
-	;MsgBox($MB_OK, "what is hotitem?", $Selected)
-    If $Selected = -1 then Return
-    While _IsPressed(1)
-    WEnd
-	;MsgBox($MB_OK, "did i release?", "maybe")
-    $Dropped = _GUICtrlListView_GetHotItem($Listview)
-	;MsgBox($MB_OK, "new hot item index?", $Dropped)
-	;MsgBox($MB_OK, "hot tracking work or no?", _GUICtrlListView_GetHotCursor($Listview) & "|" & _GUICtrlListView_GetHotItem(_GUICtrlListView_GetHotCursor($Listview)))
-    If $Dropped > -1 then
-        _GUICtrlListView_BeginUpdate($Listview)
-        If $Selected < $Dropped Then
-            _GUICtrlListView_InsertItem($Listview, _GUICtrlListView_GetItemTextString($Listview, $Selected), $Dropped + 1)
-            _GUICtrlListView_SetItemChecked($Listview, $Dropped + 1, _GUICtrlListView_GetItemChecked($Listview, $Selected))
-            _GUICtrlListView_DeleteItem($Listview, $Selected)
-        ElseIf $Selected > $Dropped Then
-            _GUICtrlListView_InsertItem($Listview, _GUICtrlListView_GetItemTextString($Listview, $Selected), $Dropped)
-            _GUICtrlListView_SetItemChecked($Listview, $Dropped, _GUICtrlListView_GetItemChecked($Listview, $Selected + 1))
-            _GUICtrlListView_DeleteItem($Listview, $Selected + 1)
-        EndIf
-        _GUICtrlListView_EndUpdate($Listview)
-    EndIf
-	_WinAPI_RedrawWindow($Listview)
-EndFunc
-#comments-end
 
 Opt("WinTitleMatchMode", 2)
 
@@ -93,7 +28,6 @@ Func Example()
     $g_iLV_Height = 280 - 75
     _GUICtrlListView_SetColumnWidth($g_hListView, 0, 100)
     _GUICtrlListView_SetColumnWidth($g_hListView, 1, 100)
-    ;_GUICtrlListView_SetExtendedListViewStyle($g_hListView, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES))
     _GUICtrlListView_SetExtendedListViewStyle($g_hListView, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT, $LVS_EX_CHECKBOXES))
     ;------------------------------------------------------
     ; Using subitem images
@@ -113,9 +47,9 @@ Func Example()
     ;------------------------------------------------------
     ;Register event functions
     ;------------------------------------------------------
-    ;GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
+    GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
     GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
-    ;GUIRegisterMsg($WM_MOUSEMOVE, "WM_MOUSEMOVE")
+    GUIRegisterMsg($WM_MOUSEMOVE, "WM_MOUSEMOVE")
 
     ;------------------------------------------------------
     ; add listview items with images
@@ -130,7 +64,9 @@ Func Example()
     GUISetState(@SW_SHOW)
 
     While 1
+
         Switch GUIGetMsg()
+
             ;-----------------------------------------------------------------------------------------
             ;This case statement exits and updates code if needed
             Case $GUI_EVENT_CLOSE
@@ -145,6 +81,83 @@ Func Example()
     _GUIImageList_Destroy($hImages)
     GUIDelete()
 EndFunc   ;==>Example
+
+#Region Item Function(s) **********************************************************************************************
+Func _LVInsertItem($i_FromItem, $i_ToItem)
+    Local $iItem_state, $i_NewIndex
+    Local $tStruct_LVITEM = DllStructCreate($tagLVITEM)
+    Local $tStruct_String = DllStructCreate("wchar Buffer[4096]")
+
+    ; Insert item into new position
+    DllStructSetData($tStruct_LVITEM, "Mask", BitOR($LVIF_STATE, $LVIF_IMAGE, $LVIF_INDENT, $LVIF_PARAM, $LVIF_TEXT))
+    DllStructSetData($tStruct_LVITEM, "StateMask", $LVIS_STATEIMAGEMASK)
+    DllStructSetData($tStruct_LVITEM, "Item", $i_FromItem)
+    DllStructSetData($tStruct_LVITEM, "SubItem", 0)
+    DllStructSetData($tStruct_LVITEM, "TextMax", 4096)
+    DllStructSetData($tStruct_LVITEM, "Text", DllStructGetPtr($tStruct_String))
+    _GUICtrlListView_GetItemEx($g_hListView, $tStruct_LVITEM)
+    If @error Then Return SetError(-1, -1, -1)
+    $iItem_state = DllStructGetData($tStruct_LVITEM, "State")
+    DllStructSetData($tStruct_LVITEM, "Item", $i_ToItem)
+    $i_NewIndex = _GUICtrlListView_InsertItem($g_hListView, DllStructGetData($tStruct_String, "Buffer"), $i_ToItem, DllStructGetData($tStruct_LVITEM, "Image"))
+    If @error Then Return SetError(-1, -1, -1)
+
+    ; restore previous state
+    _DebugPrint("$i_NewIndex = " & $i_NewIndex)
+    DllStructSetData($tStruct_LVITEM, "Mask", $LVIF_STATE)
+    DllStructSetData($tStruct_LVITEM, "Item", $i_NewIndex)
+    DllStructSetData($tStruct_LVITEM, "State", $iItem_state)
+    DllStructSetData($tStruct_LVITEM, "StateMask", $LVIS_STATEIMAGEMASK)
+    _GUICtrlListView_SetItemState($g_hListView, $i_NewIndex, $iItem_state, $LVIS_STATEIMAGEMASK)
+    If @error Then Return SetError(-1, -1, -1)
+    Return $i_NewIndex
+EndFunc   ;==>_LVInsertItem
+
+; ------------------------------------------------------
+Func _LVCopyItem($i_FromItem, $i_ToItem, $i_SubItem = 0)
+    Local $tStruct_LVITEM = DllStructCreate($tagLVITEM)
+    Local $tStruct_String = DllStructCreate("wchar Buffer[4096]")
+
+    ; get from item info
+    DllStructSetData($tStruct_LVITEM, "Mask", BitOR($LVIF_STATE, $LVIF_IMAGE, $LVIF_INDENT, $LVIF_PARAM, $LVIF_TEXT))
+    DllStructSetData($tStruct_LVITEM, "StateMask", $LVIS_STATEIMAGEMASK)
+    DllStructSetData($tStruct_LVITEM, "Item", $i_FromItem)
+    DllStructSetData($tStruct_LVITEM, "SubItem", $i_SubItem)
+    DllStructSetData($tStruct_LVITEM, "TextMax", 4096)
+    DllStructSetData($tStruct_LVITEM, "Text", DllStructGetPtr($tStruct_String))
+    _GUICtrlListView_GetItemEx($g_hListView, $tStruct_LVITEM)
+
+    ; set to
+    DllStructSetData($tStruct_LVITEM, "Item", $i_ToItem)
+    ; set text
+    DllStructSetData($tStruct_LVITEM, "Mask", $LVIF_TEXT)
+    DllStructSetData($tStruct_LVITEM, "Text", DllStructGetPtr($tStruct_String))
+    DllStructSetData($tStruct_LVITEM, "TextMax", 4096)
+    _GUICtrlListView_SetItemEx($g_hListView, $tStruct_LVITEM)
+    If @error Then Return SetError(@error, @error, @error)
+    ; set status
+    DllStructSetData($tStruct_LVITEM, "Mask", $LVIF_STATE)
+    _GUICtrlListView_SetItemEx($g_hListView, $tStruct_LVITEM)
+    ; set image
+    DllStructSetData($tStruct_LVITEM, "Mask", $LVIF_IMAGE)
+    DllStructSetData($tStruct_LVITEM, "State", $LVIF_IMAGE)
+    _GUICtrlListView_SetItemEx($g_hListView, $tStruct_LVITEM)
+    ; set state
+    DllStructSetData($tStruct_LVITEM, "Mask", $LVIF_STATE)
+    DllStructSetData($tStruct_LVITEM, "State", $LVIF_STATE)
+    _GUICtrlListView_SetItemEx($g_hListView, $tStruct_LVITEM)
+    ; set indent
+    DllStructSetData($tStruct_LVITEM, "Mask", $LVIF_INDENT)
+    DllStructSetData($tStruct_LVITEM, "State", $LVIF_INDENT)
+    _GUICtrlListView_SetItemEx($g_hListView, $tStruct_LVITEM)
+    ; set Param
+    DllStructSetData($tStruct_LVITEM, "Mask", $LVIF_PARAM)
+    DllStructSetData($tStruct_LVITEM, "State", $LVIF_PARAM)
+    _GUICtrlListView_SetItemEx($g_hListView, $tStruct_LVITEM)
+EndFunc   ;==>_LVCopyItem
+#EndRegion Item Function(s) **********************************************************************************************
+
+#Region Event Function(s) **********************************************************************************************
 
 ; WM_MOUSEMOVE event handler
 ; ------------------------------------------------------
@@ -170,11 +183,9 @@ Func WM_MOUSEMOVE($hWndGUI, $iMsgID, $wParam, $lParam)
     Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_MOUSEMOVE
 
-;this activates only when you drag the mouse heads up so NOT a single solo click
 ; WM_LBUTTONUP event handler
 ; ------------------------------------------------------
 Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
-	;MsgBox($MB_OK, "did i release?", "maybe")
     #forceref $iMsgID, $wParam
     $g_bDragging = False
     Local $aPos = ControlGetPos($hWndGUI, "", $g_hListView)
@@ -186,13 +197,9 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
     ; done dragging
     ;------------------------------------------------------
     _GUIImageList_DragLeave($g_hListView)
-		;Unlocks the specified window and hides the drag image, allowing the window to be updated
     _GUIImageList_EndDrag()
-		;Ends a drag operation
-    ;_GUIImageList_Destroy($g_ahDragImageList[0])
-		;Destroys an image list
+    _GUIImageList_Destroy($g_ahDragImageList[0])
     _WinAPI_ReleaseCapture()
-		;Releases the mouse capture from a window in the current thread and restores normal mouse input processing
     ;------------------------------------------------------
     ; do hit test see if drag ended in the listview
     ;------------------------------------------------------
@@ -296,4 +303,3 @@ Func _DebugPrint($s_Text)
             "-->" & $s_Text & @CRLF & _
             "+===========================================================" & @CRLF)
 EndFunc   ;==>_DebugPrint
-
