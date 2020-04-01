@@ -686,55 +686,60 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
 	;            _SendMessage ( $hWnd,  $iMsg          [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
 	;$g_aIndex = _SendMessage($cListView_WindowList, $LVM_HITTEST, 0, DllStructGetData ( $tStruct_LVHITTESTINFO, "iSubItem"), 0)
 	$g_aIndex = _SendMessage($hListView, $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
-	;$g_aIndex = DllStructGetData ( $tStruct_LVHITTESTINFO, "X")
-	;_SendMessage ( $hGUI, $LVM_HITTEST  [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
-	;DllStructGetData ( Struct, Element [, index = Default] )
-	;DllStructGetData ( $tStruct_LVHITTESTINFO, iItem)
-	;MsgBox($MB_OK, "start index to end index", $initIndex & "|" & $g_aIndex)
-	;$bCol = False means it's rows
-	;_ArraySwap ( ByRef $aArray, $iIndex_1, $iIndex_2 [, $bCol = False [, $iStart = -1 [, $iEnd = -1]]] )
+	;MsgBox($MB_OK, "outside listview", $g_aIndex)
 	
-	;swap indicies in row[start][0] and row[end][0] (IM ASSUMING THAT IDs ARE STATIC BY PLACE, THIS MIGHT BE UNNECESSARY/WRONG)
-	;_ArrayDisplay($LVItemArray)
-	;start index
-	$startmem = $LVItemArray[$g_aIndex][0]
-	$endmem = $LVItemArray[$initIndex][0]
-	;MsgBox($MB_OK, "start index to end index remember", $startmem & "|" & $endmem)
-	;end index
-	;update the array 
-	_ArraySwap ( $LVItemArray, $g_aIndex, $initIndex, False)
+	If $g_aIndex <> -1 Then
 	
-	;MsgBox($MB_OK, "Athe og values to swap|startmem|endmem", $LVItemArray[$initIndex][0] & "|" & $LVItemArray[$g_aIndex][0] & "|" & $startmem & "|" & $endmem)
-	;switch back the control IDs
-	$LVItemArray[$initIndex][0] = $endmem
-	$LVItemArray[$g_aIndex][0] = $startmem
-	;MsgBox($MB_OK, "Bthe og values to swap|startmem|endmem", $LVItemArray[$initIndex][0] & "|" & $LVItemArray[$g_aIndex][0] & "|" & $startmem & "|" & $endmem)
-	
-	;_ArrayDisplay($LVItemArray)
-	
-	;redraw the listview
-	;For $i = 1 To $aList_Array[0]
-	For $i = 0 To UBound($LVItemArray,1) - 1
-		;GUICtrlSetData(controlID, data [, default])
-		;GUICtrlSetData($hStart_ID + $i, $aList_Array[$i])
-		; GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
-		;so the row delimited by "|"|
-		$blankstr = $LVItemArray[$i][1]
-		For $x = 2 To UBound($LVItemArray,2) - 3
-			$blankstr &= "|" & $LVItemArray[$i][$x]
-		Next
+		;$g_aIndex = DllStructGetData ( $tStruct_LVHITTESTINFO, "X")
+		;_SendMessage ( $hGUI, $LVM_HITTEST  [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
+		;DllStructGetData ( Struct, Element [, index = Default] )
+		;DllStructGetData ( $tStruct_LVHITTESTINFO, iItem)
+		;MsgBox($MB_OK, "start index to end index", $initIndex & "|" & $g_aIndex)
+		;$bCol = False means it's rows
+		;_ArraySwap ( ByRef $aArray, $iIndex_1, $iIndex_2 [, $bCol = False [, $iStart = -1 [, $iEnd = -1]]] )
 		
-		GUICtrlSetData($LVItemArray[$i][0], $blankstr)
+		;swap indicies in row[start][0] and row[end][0] (IM ASSUMING THAT IDs ARE STATIC BY PLACE, THIS MIGHT BE UNNECESSARY/WRONG)
 		;_ArrayDisplay($LVItemArray)
-		;update checkboxes
-		For $imonitor = 0 To $Monitors[0][0]-1
-			;_GUICtrlListView_SetItemImage ( $hWnd (handle), $iIndex, $iImage [, $iSubItem = 0] )
-			;MsgBox ( $MB_OK, "title", "wut")
-			_GUICtrlListView_SetItemImage( $cListView_WindowList, $i, $LVItemArray[$i][4 + $imonitor], 3 + $imonitor)
+		;start index
+		$startmem = $LVItemArray[$g_aIndex][0]
+		$endmem = $LVItemArray[$initIndex][0]
+		;MsgBox($MB_OK, "start index to end index remember", $startmem & "|" & $endmem)
+		;end index
+		;update the array 
+		_ArraySwap ( $LVItemArray, $g_aIndex, $initIndex, False)
+		
+		;MsgBox($MB_OK, "Athe og values to swap|startmem|endmem", $LVItemArray[$initIndex][0] & "|" & $LVItemArray[$g_aIndex][0] & "|" & $startmem & "|" & $endmem)
+		;switch back the control IDs
+		$LVItemArray[$initIndex][0] = $endmem
+		$LVItemArray[$g_aIndex][0] = $startmem
+		;MsgBox($MB_OK, "Bthe og values to swap|startmem|endmem", $LVItemArray[$initIndex][0] & "|" & $LVItemArray[$g_aIndex][0] & "|" & $startmem & "|" & $endmem)
+		
+		;_ArrayDisplay($LVItemArray)
+		
+		;redraw the listview
+		;For $i = 1 To $aList_Array[0]
+		For $i = 0 To UBound($LVItemArray,1) - 1
+			;GUICtrlSetData(controlID, data [, default])
+			;GUICtrlSetData($hStart_ID + $i, $aList_Array[$i])
+			; GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
+			;so the row delimited by "|"|
+			$blankstr = $LVItemArray[$i][1]
+			For $x = 2 To UBound($LVItemArray,2) - 3
+				$blankstr &= "|" & $LVItemArray[$i][$x]
+			Next
+			
+			GUICtrlSetData($LVItemArray[$i][0], $blankstr)
+			;_ArrayDisplay($LVItemArray)
+			;update checkboxes
+			For $imonitor = 0 To $Monitors[0][0]-1
+				;_GUICtrlListView_SetItemImage ( $hWnd (handle), $iIndex, $iImage [, $iSubItem = 0] )
+				;MsgBox ( $MB_OK, "title", "wut")
+				_GUICtrlListView_SetItemImage( $cListView_WindowList, $i, $LVItemArray[$i][4 + $imonitor], 3 + $imonitor)
+			Next
 		Next
-	Next
-	;_ArrayDisplay($LVItemArray)
-	;DllCall()
+		;_ArrayDisplay($LVItemArray)
+		;DllCall()
+	EndIf
     Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_LBUTTONUP
 
