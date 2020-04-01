@@ -12,14 +12,11 @@
 #include <AutoItConstants.au3>
 #include <SendMessage.au3>
 
-;#include "GUIListViewEx\GUIListViewEx.au3"
-
 ;set aIndexList of indicies so i can clear the checkboxes on 1st column
 Global $aIndexList[1]
 
 ;Retrieve a list of window handles.
 Local $aList = WinList("[REGEXPTITLE:(?i)(.+)]")
-;_ArrayDisplay($aList)
 #comments-start
 	The array returned is two-dimensional and is made up as follows:
 	$aArray[0][0] = Number of windows returned
@@ -51,11 +48,9 @@ Next
 ;array size is Ubound of the filtered list and 5 columns
 ;make empty array
 Local $aArrayFinal[UBound($aListFiltered, 1)][5]
-;MsgBox ( $MB_OK, "title", UBound($aListFiltered, 1) & "|" & UBound($aListFiltered, 2))
 
 ;populate array
 For $i = 0 to UBound($aListFiltered, 1)-1
-	;MsgBox ( $MB_OK, "title", $i & UBound($aListFiltered, 1) & WinGetTitle($aListFiltered[$i]) & $aListFiltered[$i] & _ProcessGetName($aListFiltered[$i]) & WinGetPos ($aListFiltered[$i]) & WinGetClientSize ($aListFiltered[$i]))
 	;name
 	;wingettitle fails on microsoft edge for some reason
 	;$aArrayFinal[$i][0] = WinGetTitle($aListFiltered[$i])
@@ -73,25 +68,16 @@ Next
 
 #comments-start
 WinGetProcess()
-
 ---
-
 To be used on your hwnd's from winlist to see if its the PID your looking for.
-
 But, this can return multiple matches, as a process can have multiple windows. so some additional window title information is probably needed to make sure you get the one your after.
-
 ---
-
 
 ---
 PsaltyDS  Posted July 6, 2010 (edited) 
-
 Only gets the handle for the FIRST visible window. As was pointed out earlier, a process can and often does have multiple windows. Try it this way:
-
 #include <Array.au3>
-
 ; ...
-
 ; Returns an array of all Windows associated with a given process
 Func WinHandFromPID($pid, $winTitle = "", $timeout = 8)
     Local $secs = TimerInit()
@@ -108,18 +94,10 @@ Func WinHandFromPID($pid, $winTitle = "", $timeout = 8)
 EndFunc   ;==>WinHandFromPID
 #comments-end
 
-;display array now
-;_ArrayDisplay($aArrayFinal, "check")
-
-
-
 ;make a dropdown list of monitors
 dim $MonitorArray[1]
 
 $Monitors = _WinAPI_EnumDisplayMonitors()
-
-;MsgBox ( $MB_OK, "title1", $Monitors[0][0])
-;MsgBox ( $MB_OK, "title2", _WinAPI_GetMonitorInfo($Monitors[1][0])[3])
 
 ;set window titles appropriately
 ;update the window title properly when new monitors are connected? nah just restart Cascade+
@@ -130,21 +108,15 @@ Local $sHeaders = "Window Title|App Name(.exe)|Window Handle"
 dim $LVItemArray[1][4]
 
 For $intmon = 1 To $Monitors[0][0]
-	;MsgBox($MB_OK, "title1", $intmon)
-	;_ArrayAdd($MonitorArray,_WinAPI_GetMonitorInfo($Monitors[$intmon][0])[3])
 	_ArrayAdd($MonitorArray,_WinAPI_GetMonitorInfo($Monitors[$intmon][0])[3])
 	$sHeaders &= "|Monitor " & $intmon
 	redim $LVItemArray[UBound($LVItemArray, 1)][UBound($LVItemArray,2)+1]
 Next
-
-	
 	
 ;remove empty init element in MonitorArray
 _ArryRemoveBlanks($MonitorArray)
-;_ArrayDisplay($MonitorArray)
 
 ;GUICreate ( "title" [, width [, height [, left = -1 [, top = -1 [, style = -1 [, exStyle = -1 [, parent = 0]]]]]]] )
-;$hGUI = GUICreate("Cascade+",500,500,500,500,$WS_SIZEBOX)
 $hGUI = GUICreate("Cascade+",500,500,-1,-1,$WS_SIZEBOX )
 ;To be able to resize a GUI window it needs to have been created with the $WS_SIZEBOX and $WS_SYSMENU styles. See GUICreate().
 
@@ -177,8 +149,6 @@ $hCombo = GUICtrlCreateCombo("", 10, 10, 200, 20)
 ; And fill it
 GUICtrlSetData($hCombo, $sList)
 
-
-
 $Label1 = GUICtrlCreateLabel("Current Monitor", 10, 40)
 $Label1b = GUICtrlCreateLabel("", 100, 40, 200, 20)
 $Label2 = GUICtrlCreateLabel("Mouse X Coord", 10, 60)
@@ -199,7 +169,7 @@ $Label10 = GUICtrlCreateLabel("End Point Y", 10, 180)
 $Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
 $Label11 = GUICtrlCreateButton("Cascade Now!", 10, 430, 100, 20)
 $Label12 = GUICtrlCreateButton("Refresh Window List", 120, 430, 120, 20)
-$Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20)
+;$Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20);used to check arraystates when debugging
 $Label14 = GUICtrlCreateButton("Update Coordinates", 220, 120, 120, 20)
 $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
 
@@ -207,66 +177,31 @@ $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
 ;                    by the $aGLVEx_Data array which shadows the ListView contents.
 ;_GUIListViewEx_Close($iLV_Index)
 
-;Func _GUIListViewEx_Init($hLV, $aArray = "", $iStart = 0, $iColour = 0, $fImage = False, $iAdded = 0)
-
 Global $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200) ;$LVS_SHOWSELALWAYS
 
-;Global $hListView = _GUICtrlListView_Create($hGUI, $sHeaders, 10, 220, 400, 200)
-;Global $cListView_WindowList = _GUICtrlListView_GetItemParam ( $hGUI, $hListView )
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;getting checkboxes so i can hack onto GUIListViewEx
-;$LVS_EX_FULLROWSELECT
 _GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES));$LVS_EX_GRIDLINES
 
 Global $hListView = GUICtrlGetHandle( $cListView_WindowList )    
-; ImageList
-;idListView2 and cListView_WindowList might be redudant
-;Local $idListView2 = GUICtrlCreateListView( "", 0, 0, 1, 1 )                  ; 1x1 pixel listview to create state image list with checkbox icons
 ;apparently you can checkboxes twice to get an extra space for a supposed checkbox or smth...
-;_GUICtrlListView_SetExtendedListViewStyle( $idListView2, $LVS_EX_CHECKBOXES ) ; The $LVS_EX_CHECKBOXES style forces the state image list to be created
 ; Get state ImageList
 ;Local $hStateImageList = _GUICtrlListView_GetImageList( $idListView2, 2 ) ; 2 = Image list with state images
 Local $hStateImageList = _GUICtrlListView_GetImageList( $cListView_WindowList, 2 ) ; 2 = Image list with state images
 ; Add state ImageList as a normal ImageList
 _GUICtrlListView_SetImageList( $hListView, $hStateImageList, 1 ) ; 1 = Image list with small icons
 ; Register WM_NOTIFY message handler
+;You will need to register some Windows messages so that the UDF can intercept various key and mouse events and determine the correct actions to take. 
 GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
 GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Local $IndexCounter = 0
-
 
 For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;MsgBox ( $MB_OK, "start of MY ROW", "")
 	;init with name
 	Local $blankStr = $aArrayFinal[$rowInt][0] & "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
-	;$blankStr &=  "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
 	;add title
-	;$ItemID = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
 	$LVItem = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
-	;MsgBox ( $MB_OK, "LVItem", $LVItem)
-
-	#comments-start
-	GUICtrlDelete
-		Deletes a control.
-
-
-		GUICtrlDelete ( controlID )
-
-
-		Parameters
-		controlID The control identifier (controlID) as returned by a GUICtrlCreate...() function, or -1 for the last created control. 
-
-		Return Value
-		Success: 1. 
-		Failure: 0. 
-	#comments-end
-
-	;clear the checkbox
-	;_GUICtrlListView_SetItemState($hListView, $LVItem, 0, $LVIS_STATEIMAGEMASK)
 	
+	;clear the checkbox
 	;HEADS UP
 	;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
 	;HEADS UP CONTROL != YOUR ID
@@ -275,43 +210,19 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	$LVItemArrayItem =  $LVItem & "|" & $blankStr
 	;add the checkboxes per monitor
 	For $imonitor = 0 To $Monitors[0][0]-1
-		;_GUICtrlListView_AddSubItem( $cListView_WindowList, $IndexCounter, "checkbox", $imonitor + 2, 1 ) ; Image index 0 = unchecked checkbox
-		;_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
 		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3 + $imonitor) 
-		;MsgBox($MB_OK, "how long is 0 to " & $Monitors[0][0], $imonitor)
 		$LVItemArrayItem &= "|" & 0
 	Next
 	_ArrayAdd($LVItemArray, $LVItemArrayItem)
-	;	MsgBox ( $MB_OK, "title", $IndexCounter & "|" & $LVItem)
-	
-	;;$aIndexList[$rowInt] = $LVItem
-	;	$aIndexList[$IndexCounter] = $LVItem
-	;
 	_ArrayAdd ( $aIndexList, $IndexCounter)
-
-	;;;SET ITEM IMAGE TEST
-	;_GUICtrlListView_AddItem( $hListView, $rowInt, 0 )                           ; Image index 0 = unchecked checkbox
-	;remove the checkboxes on column 1 (format: [row],[column])
-	;_GUICtrlListView_SetItemState($hListView, $ItemID, 0, $LVIS_STATEIMAGEMASK)
-	;_WinAPI_RedrawWindow($hListView)
-	
-	
-	;MsgBox ( $MB_OK, "title", $IndexCounter)
 	$IndexCounter += 1
 Next
 _ArrayDelete($aIndexList, 0)
 _ArrayDelete($LVItemArray, 0)
-;_ArrayDisplay($LVItemArray)
 
 ;redraw everything so checkboxes get removed
 _WinAPI_RedrawWindow($hListView)
-;
-;;;;;$cListView_WindowListUDFVer = _GUIListViewEx_Init($cListView_WindowList, $aArrayFinal, 0, 0, True, + 2)
-
 Global $time = -1
-
-;You will need to register some Windows messages so that the UDF can intercept various key and mouse events and determine the correct actions to take. 
-;;;;;_GUIListViewEx_MsgRegister()
 
 GUISetState()
 
@@ -321,7 +232,7 @@ While 1
     EndIf
 	
 	Sleep(10)
-    ;If TimerDiff($time) > 5000 Then
+
 	If TimerDiff($time) > 1000 Then
         _UpdateInfo()
         $time = 0
@@ -334,10 +245,6 @@ While 1
 		Case $hCombo
 			$sComboRead = GUICtrlRead($hCombo)
 			GUICtrlSetData($Label6b, $sComboRead)
-			;;;;;_GUIListViewEx_Close($cListView_WindowListUDFVer)
-			;Label7
-			;GUICtrlSetData ( controlID, data [, default] )
-			;MsgBox($IDOK ,"search the array",_ArraySearch($MonitorCoords,$sComboRead))
 			Local $monitorInt = _ArraySearch($MonitorCoords,$sComboRead)
 			GUICtrlSetData($Label7b, $MonitorCoords[$monitorInt][1])
 			GUICtrlSetData($Label8b, $MonitorCoords[$monitorInt][2])
@@ -406,81 +313,50 @@ While 1
 						Local $OrigPos 
 						$currHWND = HWnd($MonitorSegments[$y][0])
 						$OrigPos = WinGetPos($currHWND)
-						;MsgBox ( $MB_OK, "check5", "does origpos even work?" & " " & $OrigPos)
 						$MonitorStartX = $MonitorCoords[$i+1][1]
 						$MonitorStartY = $MonitorCoords[$i+1][2]
 						$MonitorEndX = $MonitorCoords[$i+1][3]
 						$MonitorEndY = $MonitorCoords[$i+1][4]
-						;MsgBox ( $MB_OK, "check2", "check2" & $MonitorSegments[$y][0] & " " & (($MonitorStartX + $MonitorEndX)/$Localmax)*$OffsetValUNQ & " " &(($MonitorStartY + $MonitorEndY)/$Localmax)*$OffsetValUNQ)
-						;MsgBox ( $MB_OK, "check4", WinGetTitle($MonitorSegments[$y][0]) & " " &WinGetClientSize($MonitorSegments[$y][0]))
-						;_ArrayDisplay($MonitorSegments)
-						;MsgBox ( $MB_OK, "check5", $currHWND)
+						
 						;activate the window
 						;WinActivate($currHWND)
 						;some windows return false value when maximized
 						;WinSetState($currHWND, '', @SW_RESTORE)
-						;MsgBox ( $MB_OK, "check6", WinGetTitle("[ACTIVE]"))
-						;MsgBox ( $MB_OK, "check7", WinGetTitle($currHWND))
-						;MsgBox ( $MB_OK, "check7b", WinGetPos($currHWND))
-						;ArrayDisplay(WinGetPos("Program Manager")) <-- WORKS
-						;_ArrayDisplay(WinGetPos($currHWND))
-						;MsgBox ( $MB_OK, "check8", WinGetHandle("C:\Users\RaptorPatrolCore\Desktop\2020 JOB HUNT\Cascade+\Cascade+.au3 - Notepad++"))
-						;$NewPos = WinMove($MonitorSegments[$y][0], "", (($MonitorStartX + $MonitorEndX)/$Localmax)*$OffsetValUNQ, (($MonitorStartY + $MonitorEndY)/$Localmax)*$OffsetValUNQ)
-						;$NewPos = _WinAPI_MoveWindow ( $hWnd, $iX, $iY, $iWidth, $iHeight [, $bRepaint = True] )
+						
 						;WinGetClientSize ( "title" [, "text"] )
 						;$aArray[0] = Width of window's client area
 						;$aArray[1] = Height of window's client area
-						;$NewPos = _WinAPI_MoveWindow($MonitorSegments[$y][0], (($MonitorStartX + $MonitorEndX)/$Localmax)*$OffsetValUNQ, (($MonitorStartY + $MonitorEndY)/$Localmax)*$OffsetValUNQ, WinGetClientSize($MonitorSegments[$y][0])[0], WinGetClientSize($MonitorSegments[$y][0])[1])
+						
 						$OffsetX = (($MonitorEndX - $MonitorStartX)/$Localmax)*$OffsetValUNQ + $MonitorStartX
 						$OffsetY = (($MonitorEndY - $MonitorStartY)/$Localmax)*$OffsetValUNQ + $MonitorStartY
-						
-						;MsgBox ( $MB_OK, "Pos " & " " & $Localmax, $OffsetValUNQ & " " & $OffsetX & " " & $OffsetY)
-						;;;;;MsgBox ( $MB_OK, "Pos " & " " & $Localmax, $MonitorStartX & " " & $MonitorStartY & " " & $MonitorEndX & " " & $MonitorEndY )
 						
 						WinSetState ($currHWND, "", @SW_SHOW)
 						WinSetState ($currHWND, "", @SW_RESTORE)
 						
-						;$NewPos = _WinAPI_MoveWindow($currHWND, $OffsetX, $OffsetY, 500, 500)
-						;WinMove ( "title", "text", x, y [, width [, height [, speed]]] )
 						$NewPos = WinMove(HWnd($currHWND), "", $OffsetX, $OffsetY)
-						;MsgBox($MB_OK, "ERR", WinWait("[CLASS:Notepad]", "", 1)) 
-						;$NewPos = WinMove(WinWait("[CLASS:Notepad]", "", 1), "", $OffsetX, $OffsetY)
-						
 
 						WinSetOnTop ($currHWND, "", 0)
-						;WinMove($currHWND, "", 0, 0, 200, 200)
-						;WinMove(WinWait("[TITLE:FREEK]", "", 1), "", 0, 0, 200, 200)
-						;MsgBox($MB_OK, "check3",$currHWND & " " & WinGetPos($currHWND)) 
-						;MsgBox($MB_OK, "ERR", _WinAPI_GetLastError()) 
 						$OffsetValUNQ += 1
 					EndIf
 				Next 
 			Next
 		Case $Label12
 			ListViewUpdateWindows($cListView_WindowList)
-			;MsgBox ( $MB_OK, "Pos "," ")
-		Case $Label13
-			_ArrayDisplay($LVItemArray)
+		;Case $Label13
+		;	_ArrayDisplay($LVItemArray)
 		Case $Label14
-			;GUICtrlRead($idFile)
-			;MsgBox($MB_OK ,"what is empty option for monitor?",GUICtrlRead($Label6b), String(GUICtrlRead($Label6b)) == String(""))
-			;MsgBox($MB_OK ,"what is empty option for monitor?",String(GUICtrlRead($Label6b)) == String(""))
 			;if no monitor is set, do nothing:
 			If String(GUICtrlRead($Label6b)) == String("") Then
 				MsgBox($MB_OK ,"pick a monitor","please select a monitor")
 			Else
-				;MsgBox($MB_OK ,"read all the coords:",GUICtrlRead($Label7b) & "|" & GUICtrlRead($Label8b) & "|" & GUICtrlRead($Label9b) & "|" & GUICtrlRead($Label10b) & "|" & GUICtrlRead($hCombo) & "|" & _ArraySearch($MonitorCoords,$sComboRead))
-				;_ArrayDisplay($MonitorCoords)				
 				$sComboRead = GUICtrlRead($hCombo)				
 				;GUICtrlSetData ( controlID, data [, default] )
-				;MsgBox($IDOK ,"search the array",_ArraySearch($MonitorCoords,$sComboRead))
 				Local $monitorInt = _ArraySearch($MonitorCoords,$sComboRead)
 				;monitorInt should be (# of that monitor+1): _ArraySearch($MonitorCoords,$sComboRead) gives you the current # so it's good enough
 				$MonitorCoords[$monitorInt][1] = GUICtrlRead($Label7b)
 				$MonitorCoords[$monitorInt][2] = GUICtrlRead($Label8b)
 				$MonitorCoords[$monitorInt][3] = GUICtrlRead($Label9b)
 				$MonitorCoords[$monitorInt][4] = GUICtrlRead($Label10b)
-				;_ArrayDisplay($MonitorCoords)				
 			EndIf 
 		Case $Label15
 			;reset data:
@@ -515,16 +391,12 @@ Func _UpdateInfo()
 	GUICtrlSetData($Label3b, MouseGetPos()[1])
     ;GUICtrlSetColor($Label3b, 0x00FF00)
 	;update monitor the mouse is on
-	;GUICtrlSetData($Label1b, _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))[3])
 	;_WinAPI_GetMonitorInfo can not have the display so i need to check the length of this to be at least 4 to proceed:
 	If UBound(_WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))) > 3 Then
 		GUICtrlSetData($Label1b, _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))[3])
 	Else
 		GUICtrlSetData($Label1b, "Error, please wait.")
 	EndIf
-	
-	
-    ;GUICtrlSetColor($Label1b, 0x00FF00)
 EndFunc
 
 Func _ArryRemoveBlanks(ByRef $arr)
@@ -591,35 +463,24 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 					#comments-end
 					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
 					Local $aHit = _GUICtrlListView_SubItemHitTest( $hListView )
-                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
 					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
                             _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
-						;EndIf
-						;MsgBox ( $MB_OK, "title", "click")
                         Return 1
 					ElseIf $aHit[0] >= 0 And $aHit[1] >= 3 Then                                                		   	    ; Item and subitem
 						;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
 						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      		; Get checkbox icon
 						_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) 		; Toggle checkbox icon
-						;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1] & "|" & $iIcon)
-						;MsgBox($MB_OK, "LVItemArray update", $LVItemArray[$aHit[0]][1] & "|" & $LVItemArray[$aHit[0]][4] & "|" & $LVItemArray[$aHit[0]][5])
-						;MsgBox($MB_OK, "LVItemArray update", $aHit[0] & "|" & $aHit[1]+1 & "|" & Mod($iIcon + 1, 2))
 						;update the LVItemArray array
 						$LVItemArray[$aHit[0]][$aHit[1]+1] = Mod($iIcon + 1, 2)
-						;$LVItemArray[$aHit[0]][$aHit+1] = 3
-						;MsgBox($MB_OK, "LVItemArray update", "ahitcoords are?" & $aHit[0] & "|" & $aHit[1]+1 & "|" & $LVItemArray[$aHit[0]][1] & "|" & $LVItemArray[$aHit[0]][4] & "|" & $LVItemArray[$aHit[0]][5] & "|" & $LVItemArray[$aHit[0]][$aHit[1]+1])
-						;_ArrayDisplay($LVItemArray) <--- this freezes up
+						
 						;clear all other checkboxes so we force user to pick only one monitor (aka a window cannot exist in more than 1 monitor right?)
 						
-						;MsgBox($MB_OK, "title", $aHit)
 						;know we have 3 initial columns + # of monitors so just iterate over # of monitors +3 to clear checkmarks AND skip $aHit[1].
 						For $i = 0 To UBound($MonitorArray) - 1
 							;if we're not the selected column set the subitem to empty checkbox
 							If $i + 3 <> $aHit[1] Then
 								_GUICtrlListView_SetItemImage($cListView_WindowList, $aHit[0], 0, $i + 3 )
-								;MsgBox($MB_OK, "LVItemArray check the entire fucking row", $i & "|" & $aHit[0] & "|" & $aHit[1] & "|" & $LVItemArray[$aHit[0]][0] & "|" & $LVItemArray[$aHit[0]][1] & "|" & $LVItemArray[$aHit[0]][2] & "|" & $LVItemArray[$aHit[0]][3] & "|" & $LVItemArray[$aHit[0]][4] & "|" & $LVItemArray[$aHit[0]][5])
-								;$LVItemArray[$aHit[0]][$aHit[1]+1+$i] = 0
 								$LVItemArray[$aHit[0]][$i+4] = 0
 							EndIf
 						Next
@@ -629,30 +490,24 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 
                 Case $NM_DBLCLK ; Sent by a list-view control when the user double-clicks an item with the left mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
 					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
                             _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
-                        ;MsgBox ( $MB_OK, "title", "click2")
 						Return 1
                     EndIf
                     
                 Case $NM_RCLICK ; Sent by a list-view control when the user clicks an item with the right mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
 					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
-                        ;MsgBox ( $MB_OK, "title", "click3")
 						Return 1
                     EndIf
 
                 Case $NM_RDBLCLK ; Sent by a list-view control when the user double-clicks an item with the right mouse button
                     $tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-                    ;If DllStructGetData($tInfo, "Index") = $iIndex Then
 					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
                         If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
                             _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
-							;MsgBox ( $MB_OK, "title", "click4")
 						Return 1
                     EndIf
 
@@ -665,80 +520,43 @@ EndFunc   ;==>WM_NOTIFY
 ; WM_LBUTTONUP event handler
 ; ------------------------------------------------------
 Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
-	;MsgBox($MB_OK, "did i release?", "maybe") $hGUI
     #forceref $iMsgID, $wParam
-	;Global $g_hListView
-	;Local $aPos = ControlGetPos($hWndGUI, "", $g_hListView)
-	;Local $aPos = ControlGetPos($hWndGUI, "", $cListView_WindowList)
 	Local $aPos = ControlGetPos($hWndGUI, "", $hListView)
     Local $x = BitAND($lParam, 0xFFFF) - $aPos[0]
     Local $y = BitShift($lParam, 16) - $aPos[1]
 	;_WinAPI_ReleaseCapture()
 	;cListView_WindowList <=> Success: the handle to the ListView control. 
-	;right now i have the identifier [the identifier (controlID) of the new control.]
-	;;this is the handle ? hListView
 	Local $tStruct_LVHITTESTINFO = DllStructCreate($tagLVHITTESTINFO)
 	DllStructSetData($tStruct_LVHITTESTINFO, "X", $x)
     DllStructSetData($tStruct_LVHITTESTINFO, "Y", $y)
-	;$g_aIndex[1] = _SendMessage(ControlGetHandle($hGUI, "", $cListView_WindowList), $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
-	;          _SendMessage ( $hWnd, $iMsg [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
-	;$g_aIndex = _SendMessage($hListView, $LVM_HITTEST, 0,              DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
-	;            _SendMessage ( $hWnd,  $iMsg          [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
-	;$g_aIndex = _SendMessage($cListView_WindowList, $LVM_HITTEST, 0, DllStructGetData ( $tStruct_LVHITTESTINFO, "iSubItem"), 0)
 	$g_aIndex = _SendMessage($hListView, $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
-	;MsgBox($MB_OK, "outside listview", $g_aIndex)
 	
 	If $g_aIndex <> -1 Then
-	
-		;$g_aIndex = DllStructGetData ( $tStruct_LVHITTESTINFO, "X")
-		;_SendMessage ( $hGUI, $LVM_HITTEST  [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
-		;DllStructGetData ( Struct, Element [, index = Default] )
-		;DllStructGetData ( $tStruct_LVHITTESTINFO, iItem)
-		;MsgBox($MB_OK, "start index to end index", $initIndex & "|" & $g_aIndex)
-		;$bCol = False means it's rows
-		;_ArraySwap ( ByRef $aArray, $iIndex_1, $iIndex_2 [, $bCol = False [, $iStart = -1 [, $iEnd = -1]]] )
-		
 		;swap indicies in row[start][0] and row[end][0] (IM ASSUMING THAT IDs ARE STATIC BY PLACE, THIS MIGHT BE UNNECESSARY/WRONG)
-		;_ArrayDisplay($LVItemArray)
+		
 		;start index
 		$startmem = $LVItemArray[$g_aIndex][0]
-		$endmem = $LVItemArray[$initIndex][0]
-		;MsgBox($MB_OK, "start index to end index remember", $startmem & "|" & $endmem)
 		;end index
+		$endmem = $LVItemArray[$initIndex][0]
 		;update the array 
 		_ArraySwap ( $LVItemArray, $g_aIndex, $initIndex, False)
 		
-		;MsgBox($MB_OK, "Athe og values to swap|startmem|endmem", $LVItemArray[$initIndex][0] & "|" & $LVItemArray[$g_aIndex][0] & "|" & $startmem & "|" & $endmem)
 		;switch back the control IDs
 		$LVItemArray[$initIndex][0] = $endmem
 		$LVItemArray[$g_aIndex][0] = $startmem
-		;MsgBox($MB_OK, "Bthe og values to swap|startmem|endmem", $LVItemArray[$initIndex][0] & "|" & $LVItemArray[$g_aIndex][0] & "|" & $startmem & "|" & $endmem)
-		
-		;_ArrayDisplay($LVItemArray)
 		
 		;redraw the listview
-		;For $i = 1 To $aList_Array[0]
 		For $i = 0 To UBound($LVItemArray,1) - 1
-			;GUICtrlSetData(controlID, data [, default])
-			;GUICtrlSetData($hStart_ID + $i, $aList_Array[$i])
-			; GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
-			;so the row delimited by "|"|
 			$blankstr = $LVItemArray[$i][1]
 			For $x = 2 To UBound($LVItemArray,2) - 3
 				$blankstr &= "|" & $LVItemArray[$i][$x]
 			Next
-			
 			GUICtrlSetData($LVItemArray[$i][0], $blankstr)
-			;_ArrayDisplay($LVItemArray)
 			;update checkboxes
 			For $imonitor = 0 To $Monitors[0][0]-1
-				;_GUICtrlListView_SetItemImage ( $hWnd (handle), $iIndex, $iImage [, $iSubItem = 0] )
-				;MsgBox ( $MB_OK, "title", "wut")
 				_GUICtrlListView_SetItemImage( $cListView_WindowList, $i, $LVItemArray[$i][4 + $imonitor], 3 + $imonitor)
 			Next
 		Next
-		;_ArrayDisplay($LVItemArray)
-		;DllCall()
 	EndIf
     Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_LBUTTONUP
@@ -805,7 +623,6 @@ EndFunc
 
 Func ListViewUpdateWindows($LVctrl)
 	;$LVctrl is the control of the List View
-	;_ArrayDisplay($LVItemArray)
 	;make copy of array
 	$LVItemArrayCopy = $LVItemArray
 	;delete everything
@@ -813,19 +630,9 @@ Func ListViewUpdateWindows($LVctrl)
 		GUICtrlDelete($LVItemArray[$x][0])
 	Next
 	$LVItemArray = 0
-	;_ArrayDisplay($LVItemArray)
-	;_GUICtrlListView_DeleteAllItems($LVctrl)
-	;remake the listview
-	;$LVctrl = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200)
-	;_GUICtrlListView_SetExtendedListViewStyle($LVctrl, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES))
-	;$hListView = GUICtrlGetHandle( $LVctrl )  
-	;Local $hStateImageList = _GUICtrlListView_GetImageList( $LVctrl, 2 ) ; 2 = Image list with state images
-	; Add state ImageList as a normal ImageList
-	;_GUICtrlListView_SetImageList( $hListView, $hStateImageList, 1 ) ; 1 = Image list with small icons
-
+	
 	;redo gathering windows
 	;how to clear array
-	;$array = 0	
 	$aIndexList = 0	
 	Global $aIndexList[1]
 
@@ -848,11 +655,9 @@ Func ListViewUpdateWindows($LVctrl)
 	$aArrayFinal = 0
 	Local $aArrayFinal[UBound($aListFiltered, 1)][5]
 	$IndexCounter = 0
-	#comments-start
-	#comments-end
+	
 	;populate array
 	For $i = 0 to UBound($aListFiltered, 1)-1
-		;MsgBox ( $MB_OK, "title", $i & UBound($aListFiltered, 1) & WinGetTitle($aListFiltered[$i]) & $aListFiltered[$i] & _ProcessGetName($aListFiltered[$i]) & WinGetPos ($aListFiltered[$i]) & WinGetClientSize ($aListFiltered[$i]))
 		;name
 		;wingettitle fails on microsoft edge for some reason
 		;$aArrayFinal[$i][0] = WinGetTitle($aListFiltered[$i])
@@ -879,32 +684,22 @@ Func ListViewUpdateWindows($LVctrl)
 		$blankStr &=  "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
 		;add title
 		$LVItem = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
-		;$IndexCounter = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
-		;MsgBox($MB_OK, "Indexcounter does not match item index...", $blankStr & "|" & $LVItem & "|" & $IndexCounter)
+		
 		_ArrayAdd($LVItemArray, $LVItem & "|" & $blankStr )
 		;HEADS UP
 		;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
 		;HEADS UP CONTROL != YOUR ID
 		_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
 		
-		;_ArrayDisplay($LVItemArrayCopy)
 		;add the checkboxes per monitor
 		For $imonitor = 0 To $Monitors[0][0]-1
 			;search for the array in LVItemArrayCopy
-			;_ArraySearch ( Const ByRef $aArray, $vValue [, $iStart = 0 [, $iEnd = 0 [, $iCase = 0 [, $iCompare = 0 [, $iForward = 1 [, $iSubItem = -1 [, $bRow = False]]]]]]] )
-			;MsgBox($MB_OK, $aArrayFinal[$rowInt][0] & "|" & $aArrayFinal[$rowInt][1], _ArraySearch($LVItemArrayCopy, $aArrayFinal[$rowInt][1]))
-			;_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 3) ; 3 is the zero based index of fourth column
 			$ExistenceCheck = _ArraySearch($LVItemArrayCopy, $aArrayFinal[$rowInt][1])
 			If $ExistenceCheck <> -1 Then
-				;_ArrayDisplay($LVItemArray)
-				;MsgBox($MB_OK, "", $ExistenceCheck & "|" & $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor])
 				_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor], 3 + $imonitor)
-				;MsgBox($MB_OK, "title",UBound($LVItemArray,1)-1)
 				$LVItemArray[UBound($LVItemArray,1)-1][4 + $imonitor] = $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor]
 			;if you can't find it just set as blank
 			Else
-				;_ArrayDisplay($LVItemArray)
-				;MsgBox($MB_OK, "title",UBound($LVItemArray,1)-1)
 				_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 3 + $imonitor)
 				$LVItemArray[UBound($LVItemArray,1)-1][4 + $imonitor] = 0
 			EndIf
@@ -913,12 +708,8 @@ Func ListViewUpdateWindows($LVctrl)
 		_ArrayAdd ( $aIndexList, $IndexCounter)
 		$IndexCounter += 1
 	Next
-	;_ArrayDisplay($LVItemArray)
 	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
 	_ArrayDelete ( $aIndexList, 0 )
 	_ArrayDelete ( $LVItemArray, 0 )
-	;_ArrayDisplay($aIndexList)
-	;_WinAPI_RedrawWindow($hListView)
-	;GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
-	
+	;;MsgBox($MB_OK, "is this an index or what??", $initIndex)
 EndFunc
