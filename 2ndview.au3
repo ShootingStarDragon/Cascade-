@@ -211,12 +211,14 @@ $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
 
 Global $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200) ;$LVS_SHOWSELALWAYS
 
+;Global $hListView = _GUICtrlListView_Create($hGUI, $sHeaders, 10, 220, 400, 200)
+;Global $cListView_WindowList = _GUICtrlListView_GetItemParam ( $hGUI, $hListView )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;getting checkboxes so i can hack onto GUIListViewEx
 ;$LVS_EX_FULLROWSELECT
-_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES))
+_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES));$LVS_EX_GRIDLINES
 
-$hListView = GUICtrlGetHandle( $cListView_WindowList )    
+Global $hListView = GUICtrlGetHandle( $cListView_WindowList )    
 ; ImageList
 ;idListView2 and cListView_WindowList might be redudant
 ;Local $idListView2 = GUICtrlCreateListView( "", 0, 0, 1, 1 )                  ; 1x1 pixel listview to create state image list with checkbox icons
@@ -568,6 +570,9 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
     Switch $hWndFrom
         Case $hWndListView
             Switch $iCode
+				Case $LVN_BEGINDRAG
+					Global $initIndex = _GUICtrlListView_GetHotItem($hListView)
+					;MsgBox($MB_OK, "is this an index or what??", "not declared")
 				Case $NM_CLICK ; Sent by a list-view control when the user clicks an item with the left mouse button
 					#comments-start
 						_GUICtrlListView_SubItemHitTest
@@ -662,13 +667,37 @@ EndFunc   ;==>WM_NOTIFY
 Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
 	;MsgBox($MB_OK, "did i release?", "maybe") $hGUI
     #forceref $iMsgID, $wParam
+	;Global $g_hListView
+	;Local $aPos = ControlGetPos($hWndGUI, "", $g_hListView)
+	;Local $aPos = ControlGetPos($hWndGUI, "", $cListView_WindowList)
+	Local $aPos = ControlGetPos($hWndGUI, "", $hListView)
+    Local $x = BitAND($lParam, 0xFFFF) - $aPos[0]
+    Local $y = BitShift($lParam, 16) - $aPos[1]
+	;_WinAPI_ReleaseCapture()
 	;cListView_WindowList <=> Success: the handle to the ListView control. 
 	;right now i have the identifier [the identifier (controlID) of the new control.]
-    ;$g_aIndex[1] = _SendMessage(ControlGetHandle($hGUI, "", $cListView_WindowList), $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
-    $g_aIndex[1] = _SendMessage(GUICtrlGetHandle($cListView_WindowList), $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
-	DllCall()
-	;MsgBox($MB_OK, "is this an index or what??", $g_aIndex[1])
-	MsgBox($MB_OK, "is this an index or what??", "what am i")
+	;;this is the handle ? hListView
+	Local $tStruct_LVHITTESTINFO = DllStructCreate($tagLVHITTESTINFO)
+	DllStructSetData($tStruct_LVHITTESTINFO, "X", $x)
+    DllStructSetData($tStruct_LVHITTESTINFO, "Y", $y)
+	;$g_aIndex[1] = _SendMessage(ControlGetHandle($hGUI, "", $cListView_WindowList), $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
+	;          _SendMessage ( $hWnd, $iMsg [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
+	;$g_aIndex = _SendMessage($hListView, $LVM_HITTEST, 0,              DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
+	;            _SendMessage ( $hWnd,  $iMsg          [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
+	;$g_aIndex = _SendMessage($cListView_WindowList, $LVM_HITTEST, 0, DllStructGetData ( $tStruct_LVHITTESTINFO, "iSubItem"), 0)
+	$g_aIndex = _SendMessage($hListView, $LVM_HITTEST, 0, DllStructGetPtr($tStruct_LVHITTESTINFO), 0, "wparam", "ptr")
+	;$g_aIndex = DllStructGetData ( $tStruct_LVHITTESTINFO, "X")
+	;_SendMessage ( $hGUI, $LVM_HITTEST  [, $wParam = 0 [, $lParam = 0 [, $iReturn = 0 [, $wParamType = "wparam" [, $lParamType = "lparam" [, $sReturnType = "lresult"]]]]]] )
+	;DllStructGetData ( Struct, Element [, index = Default] )
+	;DllStructGetData ( $tStruct_LVHITTESTINFO, iItem)
+	MsgBox($MB_OK, "start index to end index", $initIndex & "|" & $g_aIndex)
+	;$bCol = False means it's rows
+	;_ArraySwap ( ByRef $aArray, $iIndex_1, $iIndex_2 [, $bCol = False [, $iStart = -1 [, $iEnd = -1]]] )
+	;update the array 
+	_ArraySwap ( ByRef $aArray, $iIndex_1, $iIndex_2 [, $bCol = False [, $iStart = -1 [, $iEnd = -1]]] )
+	;redraw the listview
+	
+	;DllCall()
     Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_LBUTTONUP
 
@@ -814,7 +843,6 @@ Func ListViewUpdateWindows($LVctrl)
 		;HEADS UP
 		;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
 		;HEADS UP CONTROL != YOUR ID
-		;this is the control ? hListView
 		_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
 		
 		;_ArrayDisplay($LVItemArrayCopy)

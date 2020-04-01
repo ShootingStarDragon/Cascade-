@@ -75,6 +75,7 @@ _ArraySwap($aList_Array, $aList_Array[$iList_Index],  $aList_Array[$iList_Index 
 
 ; Rewrite list items
 For $i = 1 To $aList_Array[0]
+	_ArrayDisplay($aList_Array)
     GUICtrlSetData($hStart_ID + $i, $aList_Array[$i])
 Next
 
