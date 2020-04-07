@@ -626,13 +626,108 @@ Func ListViewUpdateWindows($LVctrl)
 	;make copy of array
 	$LVItemArrayCopy = $LVItemArray
 	;delete everything
+	;For $x = 0 To UBound($LVItemArray,1) - 1
+	;	GUICtrlDelete($LVItemArray[$x][0])
+	;Next
+	;$LVItemArray = 0
+	
+	;redo gathering windows
+	$aIndexList = 0	
+	Global $aIndexList[1]
+
+	;Retrieve a list of window handles.
+	Local $aList = WinList("[REGEXPTITLE:(?i)(.+)]")
+	;$aListFiltered = 0
+	Local $aListFiltered[0]
+	;$aTitles = 0
+	Local $aTitles[0]
+	
+	;filter winlist to get rid of windows with no titles and manually remove program manager
+	For $i = 1 to $aList[0][0]
+		;have to manually remove program manager I think
+		If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then
+			_ArrayAdd($aListFiltered, $aList[$i][1])
+			_ArrayAdd($aTitles, $aList[$i][0])
+		EndIf
+	Next
+	;make empty array
+	$aArrayFinal = 0
+	Local $aArrayFinal[UBound($aListFiltered, 1)][5]	
+	
+	;populate array
+	For $i = 0 to UBound($aListFiltered, 1)-1
+		;name
+		;wingettitle fails on microsoft edge for some reason
+		;$aArrayFinal[$i][0] = WinGetTitle($aListFiltered[$i])
+		;$aArrayFinal[$i][0] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
+		$aArrayFinal[$i][0] = $aTitles[$i]
+		;HWND
+		$aArrayFinal[$i][1] = $aListFiltered[$i]
+		;exe name
+		$aArrayFinal[$i][2] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
+		;pos
+		$aArrayFinal[$i][3] = WinGetPos($aListFiltered[$i])[0] & "," & WinGetPos($aListFiltered[$i])[1]
+		;size
+		$aArrayFinal[$i][4] = WinGetClientSize($aListFiltered[$i])[0] & "," & WinGetClientSize($aListFiltered[$i])[1]
+	Next
+	;dim $LVItemArray[1][4]
+	;make array bigger depending on # of monitors
+	;For $imonitor = 0 To $Monitors[0][0]-1
+		;_ArrayDisplay($LVItemArray)
+	;	Redim $LVItemArray[1][UBound($LVItemArray,2)+1]
+	;Next
+	;_ArrayDisplay($LVItemArray)
+	For $rowInt = 0 To UBound($aArrayFinal, 1)-1
+		;MsgBox($MB_OK, "searching for|what does arraysearch say",$aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1] & "|" & _ArraySearch($LVItemArray, $aArrayFinal[$rowInt][1], 0, 0, 0, 0, 1, 3, False))
+		;search for hwnd
+		If _ArraySearch($LVItemArray, $aArrayFinal[$rowInt][1], 0, 0, 0, 0, 1, 3, False) == -1 Then
+			;init with name
+			Local $blankStr = $aArrayFinal[$rowInt][0]
+			$blankStr &=  "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
+			;add title
+			$LVItem = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
+			
+			_ArrayAdd($LVItemArray, $LVItem & "|" & $blankStr )
+			;HEADS UP
+			;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
+			;HEADS UP CONTROL != YOUR ID
+			_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
+			
+			$IndexCounter = UBound($LVItemArray,1) - 1
+			;add the checkboxes per monitor
+			For $imonitor = 0 To $Monitors[0][0]-1
+				;search for the array in LVItemArrayCopy
+				$ExistenceCheck = _ArraySearch($LVItemArrayCopy, $aArrayFinal[$rowInt][1])
+				If $ExistenceCheck <> -1 Then
+					_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor], 3 + $imonitor)
+					$LVItemArray[UBound($LVItemArray,1)-1][4 + $imonitor] = $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor]
+				;if you can't find it just set as blank
+				Else
+					_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 3 + $imonitor)
+					$LVItemArray[UBound($LVItemArray,1)-1][4 + $imonitor] = 0
+				EndIf
+			Next
+			;_WinAPI_RedrawWindow($LVctrl)
+			_ArrayAdd ( $aIndexList, $IndexCounter)
+		EndIf
+	Next
+	;_ArrayDisplay($LVItemArray)
+	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
+	_ArrayDelete ( $aIndexList, 0 )
+	;;MsgBox($MB_OK, "is this an index or what??", $initIndex)
+EndFunc
+
+Func ListViewUpdateWindows_DEPRECATED($LVctrl)
+	;$LVctrl is the control of the List View
+	;make copy of array
+	$LVItemArrayCopy = $LVItemArray
+	;delete everything
 	For $x = 0 To UBound($LVItemArray,1) - 1
 		GUICtrlDelete($LVItemArray[$x][0])
 	Next
 	$LVItemArray = 0
 	
 	;redo gathering windows
-	;how to clear array
 	$aIndexList = 0	
 	Global $aIndexList[1]
 
