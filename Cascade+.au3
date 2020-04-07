@@ -676,7 +676,22 @@ Func ListViewUpdateWindows($LVctrl)
 		;_ArrayDisplay($LVItemArray)
 	;	Redim $LVItemArray[1][UBound($LVItemArray,2)+1]
 	;Next
+	;_ArrayDisplay($aArrayFinal)
 	;_ArrayDisplay($LVItemArray)
+	$delOffset = 0
+	For $rowInt = 0 To UBound($LVItemArray,1)-1
+		;GUICtrlRead ( controlID [, advanced = 0] )
+		;MsgBox($MB_OK, "test arraysearch",_ArraySearch($aArrayFinal, $LVItemArray[$rowInt][3], 0, 0, 0, 0, 1, 1, False))
+		;read the array instead and remember to delete the right listviewitem
+		If _ArraySearch($aArrayFinal, $LVItemArray[$rowInt][3], 0, 0, 0, 0, 1, 1, False) == -1 Then
+			;delete the right listview control
+			;MsgBox($MB_OK, "test",$LVItemArray[$rowInt][0] & "|" & $LVItemArray[$rowInt][1])
+			GUICtrlDelete($LVItemArray[$rowInt][0]-$delOffset)
+			;delete the array row and resize appropriately (_arraydelete does this apparently)
+			_ArrayDelete ( $LVItemArray, $rowInt)
+			$delOffset += 1
+		EndIf
+	Next
 	For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 		;MsgBox($MB_OK, "searching for|what does arraysearch say",$aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1] & "|" & _ArraySearch($LVItemArray, $aArrayFinal[$rowInt][1], 0, 0, 0, 0, 1, 3, False))
 		;search for hwnd
