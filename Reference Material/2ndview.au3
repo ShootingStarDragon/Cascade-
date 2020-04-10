@@ -169,7 +169,7 @@ $Label10 = GUICtrlCreateLabel("End Point Y", 10, 180)
 $Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
 $Label11 = GUICtrlCreateButton("Cascade Now!", 10, 430, 100, 20)
 $Label12 = GUICtrlCreateButton("Refresh Window List", 120, 430, 120, 20)
-;$Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20);used to check arraystates when debugging
+$Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20);used to check arraystates when debugging
 $Label14 = GUICtrlCreateButton("Update Coordinates", 220, 120, 120, 20)
 $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
 
@@ -342,8 +342,8 @@ While 1
 			Next
 		Case $Label12
 			ListViewUpdateWindows($cListView_WindowList)
-		;Case $Label13
-		;	_ArrayDisplay($LVItemArray)
+		Case $Label13
+			_ArrayDisplay($LVItemArray)
 		Case $Label14
 			;if no monitor is set, do nothing:
 			If String(GUICtrlRead($Label6b)) == String("") Then
@@ -622,24 +622,21 @@ Func MonitoInfo()
 EndFunc
 
 Func ListViewUpdateWindows($LVctrl)
-	#comments-start
-	plan: 
-		make new winlist
-		just filter with old LVItemArray and if it's a new window handle just append to the bottom of the array and redraw ListView
-	#comments-end
 	;$LVctrl is the control of the List View
+	;make copy of array
+	$LVItemArrayCopy = $LVItemArray
+	;delete everything
+	;For $x = 0 To UBound($LVItemArray,1) - 1
+	;	GUICtrlDelete($LVItemArray[$x][0])
+	;Next
+	;$LVItemArray = 0
 	
-	
-	;Retrieve a list of window handles.
-	Local $aList = WinList("[REGEXPTITLE:(?i)(.+)]")
-	
-	
-		
 	;redo gathering windows
 	$aIndexList = 0	
 	Global $aIndexList[1]
 
-	
+	;Retrieve a list of window handles.
+	Local $aList = WinList("[REGEXPTITLE:(?i)(.+)]")
 	;$aListFiltered = 0
 	Local $aListFiltered[0]
 	;$aTitles = 0
@@ -655,8 +652,7 @@ Func ListViewUpdateWindows($LVctrl)
 	Next
 	;make empty array
 	$aArrayFinal = 0
-	Local $aArrayFinal[UBound($aListFiltered, 1)][5]
-	$IndexCounter = 0
+	Local $aArrayFinal[UBound($aListFiltered, 1)][5]	
 	
 	;populate array
 	For $i = 0 to UBound($aListFiltered, 1)-1
@@ -674,45 +670,65 @@ Func ListViewUpdateWindows($LVctrl)
 		;size
 		$aArrayFinal[$i][4] = WinGetClientSize($aListFiltered[$i])[0] & "," & WinGetClientSize($aListFiltered[$i])[1]
 	Next
-	dim $LVItemArray[1][4]
+	;dim $LVItemArray[1][4]
 	;make array bigger depending on # of monitors
-	For $imonitor = 0 To $Monitors[0][0]-1
+	;For $imonitor = 0 To $Monitors[0][0]-1
 		;_ArrayDisplay($LVItemArray)
-		Redim $LVItemArray[1][UBound($LVItemArray,2)+1]
+	;	Redim $LVItemArray[1][UBound($LVItemArray,2)+1]
+	;Next
+	;_ArrayDisplay($aArrayFinal)
+	;_ArrayDisplay($LVItemArray)
+	$delOffset = 0
+	For $rowInt = 0 To UBound($LVItemArray,1)-1
+		;GUICtrlRead ( controlID [, advanced = 0] )
+		;MsgBox($MB_OK, "test arraysearch",_ArraySearch($aArrayFinal, $LVItemArray[$rowInt][3], 0, 0, 0, 0, 1, 1, False))
+		;read the array instead and remember to delete the right listviewitem
+		If _ArraySearch($aArrayFinal, $LVItemArray[$rowInt][3], 0, 0, 0, 0, 1, 1, False) == -1 Then
+			;delete the right listview control
+			;MsgBox($MB_OK, "test",$LVItemArray[$rowInt][0] & "|" & $LVItemArray[$rowInt][1])
+			GUICtrlDelete($LVItemArray[$rowInt][0]-$delOffset)
+			;delete the array row and resize appropriately (_arraydelete does this apparently)
+			_ArrayDelete ( $LVItemArray, $rowInt)
+			$delOffset += 1
+		EndIf
 	Next
 	For $rowInt = 0 To UBound($aArrayFinal, 1)-1
-		;init with name
-		Local $blankStr = $aArrayFinal[$rowInt][0]
-		$blankStr &=  "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
-		;add title
-		$LVItem = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
-		
-		_ArrayAdd($LVItemArray, $LVItem & "|" & $blankStr )
-		;HEADS UP
-		;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
-		;HEADS UP CONTROL != YOUR ID
-		_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
-		
-		;add the checkboxes per monitor
-		For $imonitor = 0 To $Monitors[0][0]-1
-			;search for the array in LVItemArrayCopy
-			$ExistenceCheck = _ArraySearch($LVItemArrayCopy, $aArrayFinal[$rowInt][1])
-			If $ExistenceCheck <> -1 Then
-				_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor], 3 + $imonitor)
-				$LVItemArray[UBound($LVItemArray,1)-1][4 + $imonitor] = $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor]
-			;if you can't find it just set as blank
-			Else
-				_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 3 + $imonitor)
-				$LVItemArray[UBound($LVItemArray,1)-1][4 + $imonitor] = 0
-			EndIf
-		Next
-		;_WinAPI_RedrawWindow($LVctrl)
-		_ArrayAdd ( $aIndexList, $IndexCounter)
-		$IndexCounter += 1
+		;MsgBox($MB_OK, "searching for|what does arraysearch say",$aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1] & "|" & _ArraySearch($LVItemArray, $aArrayFinal[$rowInt][1], 0, 0, 0, 0, 1, 3, False))
+		;search for hwnd
+		If _ArraySearch($LVItemArray, $aArrayFinal[$rowInt][1], 0, 0, 0, 0, 1, 3, False) == -1 Then
+			;init with name
+			Local $blankStr = $aArrayFinal[$rowInt][0]
+			$blankStr &=  "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
+			;add title
+			$LVItem = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
+			
+			_ArrayAdd($LVItemArray, $LVItem & "|" & $blankStr )
+			;HEADS UP
+			;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
+			;HEADS UP CONTROL != YOUR ID
+			_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
+			
+			$IndexCounter = UBound($LVItemArray,1) - 1
+			;add the checkboxes per monitor
+			For $imonitor = 0 To $Monitors[0][0]-1
+				;search for the array in LVItemArrayCopy
+				$ExistenceCheck = _ArraySearch($LVItemArrayCopy, $aArrayFinal[$rowInt][1])
+				If $ExistenceCheck <> -1 Then
+					_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor], 3 + $imonitor)
+					$LVItemArray[UBound($LVItemArray,1)-1][4 + $imonitor] = $LVItemArrayCopy[$ExistenceCheck][4 + $imonitor]
+				;if you can't find it just set as blank
+				Else
+					_GUICtrlListView_SetItemImage( $LVctrl, $IndexCounter, 0, 3 + $imonitor)
+					$LVItemArray[UBound($LVItemArray,1)-1][4 + $imonitor] = 0
+				EndIf
+			Next
+			;_WinAPI_RedrawWindow($LVctrl)
+			_ArrayAdd ( $aIndexList, $IndexCounter)
+		EndIf
 	Next
+	;_ArrayDisplay($LVItemArray)
 	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
 	_ArrayDelete ( $aIndexList, 0 )
-	_ArrayDelete ( $LVItemArray, 0 )
 	;;MsgBox($MB_OK, "is this an index or what??", $initIndex)
 EndFunc
 

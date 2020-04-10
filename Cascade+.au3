@@ -169,7 +169,7 @@ $Label10 = GUICtrlCreateLabel("End Point Y", 10, 180)
 $Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
 $Label11 = GUICtrlCreateButton("Cascade Now!", 10, 430, 100, 20)
 $Label12 = GUICtrlCreateButton("Refresh Window List", 120, 430, 120, 20)
-;$Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20);used to check arraystates when debugging
+$Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20);used to check arraystates when debugging
 $Label14 = GUICtrlCreateButton("Update Coordinates", 220, 120, 120, 20)
 $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
 
@@ -342,8 +342,8 @@ While 1
 			Next
 		Case $Label12
 			ListViewUpdateWindows($cListView_WindowList)
-		;Case $Label13
-		;	_ArrayDisplay($LVItemArray)
+		Case $Label13
+			_ArrayDisplay($LVItemArray)
 		Case $Label14
 			;if no monitor is set, do nothing:
 			If String(GUICtrlRead($Label6b)) == String("") Then
@@ -683,12 +683,12 @@ Func ListViewUpdateWindows($LVctrl)
 		;GUICtrlRead ( controlID [, advanced = 0] )
 		;MsgBox($MB_OK, "test arraysearch",_ArraySearch($aArrayFinal, $LVItemArray[$rowInt][3], 0, 0, 0, 0, 1, 1, False))
 		;read the array instead and remember to delete the right listviewitem
-		If _ArraySearch($aArrayFinal, $LVItemArray[$rowInt][3], 0, 0, 0, 0, 1, 1, False) == -1 Then
+		If _ArraySearch($aArrayFinal, $LVItemArray[$rowInt-$delOffset][3], 0, 0, 0, 0, 1, 1, False) == -1 Then
 			;delete the right listview control
 			;MsgBox($MB_OK, "test",$LVItemArray[$rowInt][0] & "|" & $LVItemArray[$rowInt][1])
 			GUICtrlDelete($LVItemArray[$rowInt][0]-$delOffset)
 			;delete the array row and resize appropriately (_arraydelete does this apparently)
-			_ArrayDelete ( $LVItemArray, $rowInt)
+			_ArrayDelete($LVItemArray, $rowInt)
 			$delOffset += 1
 		EndIf
 	Next
@@ -703,12 +703,12 @@ Func ListViewUpdateWindows($LVctrl)
 			$LVItem = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
 			
 			_ArrayAdd($LVItemArray, $LVItem & "|" & $blankStr )
+			
+			$IndexCounter = UBound($LVItemArray,1) - 1
 			;HEADS UP
 			;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
 			;HEADS UP CONTROL != YOUR ID
 			_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
-			
-			$IndexCounter = UBound($LVItemArray,1) - 1
 			;add the checkboxes per monitor
 			For $imonitor = 0 To $Monitors[0][0]-1
 				;search for the array in LVItemArrayCopy
