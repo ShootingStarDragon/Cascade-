@@ -36,8 +36,11 @@ Local $aTitles[0]
 For $i = 1 to $aList[0][0]
 	;have to manually remove program manager I think
 	If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then
+		
+		;there is a problem when something like firefox has "|" in the title... i have to filter that char out
+		
 		_ArrayAdd($aListFiltered, $aList[$i][1])
-		_ArrayAdd($aTitles, $aList[$i][0])
+		_ArrayAdd($aTitles, StringRegExpReplace($aList[$i][0],"\|","_"))
 	EndIf
 Next
 ;let's check it right now by displaying aListFiltered
@@ -55,6 +58,7 @@ For $i = 0 to UBound($aListFiltered, 1)-1
 	;wingettitle fails on microsoft edge for some reason
 	;$aArrayFinal[$i][0] = WinGetTitle($aListFiltered[$i])
 	;$aArrayFinal[$i][0] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
+	
 	$aArrayFinal[$i][0] = $aTitles[$i]
 	;HWND
 	$aArrayFinal[$i][1] = $aListFiltered[$i]
@@ -632,7 +636,7 @@ Func ListViewUpdateWindows($LVctrl)
 	;$LVItemArray = 0
 	
 	;redo gathering windows
-	$aIndexList = 0	
+	$aIndexList = 0
 	Global $aIndexList[1]
 
 	;Retrieve a list of window handles.
@@ -647,12 +651,12 @@ Func ListViewUpdateWindows($LVctrl)
 		;have to manually remove program manager I think
 		If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then
 			_ArrayAdd($aListFiltered, $aList[$i][1])
-			_ArrayAdd($aTitles, $aList[$i][0])
+			_ArrayAdd($aTitles, StringRegExpReplace($aList[$i][0],"\|","_"))
 		EndIf
 	Next
 	;make empty array
 	$aArrayFinal = 0
-	Local $aArrayFinal[UBound($aListFiltered, 1)][5]	
+	Local $aArrayFinal[UBound($aListFiltered, 1)][5]
 	
 	;populate array
 	For $i = 0 to UBound($aListFiltered, 1)-1
@@ -660,6 +664,8 @@ Func ListViewUpdateWindows($LVctrl)
 		;wingettitle fails on microsoft edge for some reason
 		;$aArrayFinal[$i][0] = WinGetTitle($aListFiltered[$i])
 		;$aArrayFinal[$i][0] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
+		;there is a problem when something like firefox has "|" in the title... i have to filter that char out
+		
 		$aArrayFinal[$i][0] = $aTitles[$i]
 		;HWND
 		$aArrayFinal[$i][1] = $aListFiltered[$i]
@@ -730,6 +736,7 @@ Func ListViewUpdateWindows($LVctrl)
 	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
 	_ArrayDelete ( $aIndexList, 0 )
 	;;MsgBox($MB_OK, "is this an index or what??", $initIndex)
+	_WinAPI_RedrawWindow($hGUI)
 EndFunc
 
 Func ListViewUpdateWindows_DEPRECATED($LVctrl)

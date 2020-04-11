@@ -36,8 +36,11 @@ Local $aTitles[0]
 For $i = 1 to $aList[0][0]
 	;have to manually remove program manager I think
 	If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then
+		
+		;there is a problem when something like firefox has "|" in the title... i have to filter that char out
+		
 		_ArrayAdd($aListFiltered, $aList[$i][1])
-		_ArrayAdd($aTitles, $aList[$i][0])
+		_ArrayAdd($aTitles, StringRegExpReplace($aList[$i][0],"\|","_"))
 	EndIf
 Next
 ;let's check it right now by displaying aListFiltered
@@ -55,6 +58,7 @@ For $i = 0 to UBound($aListFiltered, 1)-1
 	;wingettitle fails on microsoft edge for some reason
 	;$aArrayFinal[$i][0] = WinGetTitle($aListFiltered[$i])
 	;$aArrayFinal[$i][0] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
+	
 	$aArrayFinal[$i][0] = $aTitles[$i]
 	;HWND
 	$aArrayFinal[$i][1] = $aListFiltered[$i]
@@ -632,7 +636,7 @@ Func ListViewUpdateWindows($LVctrl)
 	;$LVItemArray = 0
 	
 	;redo gathering windows
-	$aIndexList = 0	
+	$aIndexList = 0
 	Global $aIndexList[1]
 
 	;Retrieve a list of window handles.
@@ -652,7 +656,7 @@ Func ListViewUpdateWindows($LVctrl)
 	Next
 	;make empty array
 	$aArrayFinal = 0
-	Local $aArrayFinal[UBound($aListFiltered, 1)][5]	
+	Local $aArrayFinal[UBound($aListFiltered, 1)][5]
 	
 	;populate array
 	For $i = 0 to UBound($aListFiltered, 1)-1
@@ -660,7 +664,22 @@ Func ListViewUpdateWindows($LVctrl)
 		;wingettitle fails on microsoft edge for some reason
 		;$aArrayFinal[$i][0] = WinGetTitle($aListFiltered[$i])
 		;$aArrayFinal[$i][0] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
-		$aArrayFinal[$i][0] = $aTitles[$i]
+		;there is a problem when something like firefox has "|" in the title... i have to filter that char out
+		
+		; Here is the string
+		$sString = $aTitles[$i]
+
+		; Now split it into individual characters
+		$aChars = StringSplit($sString, "")
+
+		; Now loop through them - the count is in the [0] element
+		For $x = 1 To $aChars[0]
+			If $aChars[$x] <> "|" Then
+				$sFiltered &= $aChars[$x]
+			EndIf
+		Next
+		
+		$aArrayFinal[$i][0] = $sFiltered
 		;HWND
 		$aArrayFinal[$i][1] = $aListFiltered[$i]
 		;exe name
@@ -683,12 +702,12 @@ Func ListViewUpdateWindows($LVctrl)
 		;GUICtrlRead ( controlID [, advanced = 0] )
 		;MsgBox($MB_OK, "test arraysearch",_ArraySearch($aArrayFinal, $LVItemArray[$rowInt][3], 0, 0, 0, 0, 1, 1, False))
 		;read the array instead and remember to delete the right listviewitem
-		If _ArraySearch($aArrayFinal, $LVItemArray[$rowInt][3], 0, 0, 0, 0, 1, 1, False) == -1 Then
+		If _ArraySearch($aArrayFinal, $LVItemArray[$rowInt-$delOffset][3], 0, 0, 0, 0, 1, 1, False) == -1 Then
 			;delete the right listview control
 			;MsgBox($MB_OK, "test",$LVItemArray[$rowInt][0] & "|" & $LVItemArray[$rowInt][1])
 			GUICtrlDelete($LVItemArray[$rowInt][0]-$delOffset)
 			;delete the array row and resize appropriately (_arraydelete does this apparently)
-			_ArrayDelete ( $LVItemArray, $rowInt)
+			_ArrayDelete($LVItemArray, $rowInt)
 			$delOffset += 1
 		EndIf
 	Next
@@ -703,12 +722,12 @@ Func ListViewUpdateWindows($LVctrl)
 			$LVItem = GUICtrlCreateListViewItem ( $blankStr, $LVctrl)
 			
 			_ArrayAdd($LVItemArray, $LVItem & "|" & $blankStr )
+			
+			$IndexCounter = UBound($LVItemArray,1) - 1
 			;HEADS UP
 			;IN THIS CASE $LVItem = GUICtrlCreateListViewItem IS NOT OUR CONTROLID. The control ID is still a sequence. Since $rowInt is counting from the UBound our LVItem is numbered according to the windows not the control ID's if that makes any sense
 			;HEADS UP CONTROL != YOUR ID
 			_GUICtrlListView_SetItemState($hListView, $IndexCounter, 0, $LVIS_STATEIMAGEMASK)
-			
-			$IndexCounter = UBound($LVItemArray,1) - 1
 			;add the checkboxes per monitor
 			For $imonitor = 0 To $Monitors[0][0]-1
 				;search for the array in LVItemArrayCopy
@@ -730,6 +749,7 @@ Func ListViewUpdateWindows($LVctrl)
 	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
 	_ArrayDelete ( $aIndexList, 0 )
 	;;MsgBox($MB_OK, "is this an index or what??", $initIndex)
+	_WinAPI_RedrawWindow($hGUI)
 EndFunc
 
 Func ListViewUpdateWindows_DEPRECATED($LVctrl)
