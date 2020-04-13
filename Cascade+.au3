@@ -183,7 +183,7 @@ $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
 
 Global $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200) ;$LVS_SHOWSELALWAYS
 
-_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES));$LVS_EX_GRIDLINES
+_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT));$LVS_EX_GRIDLINES
 
 Global $hListView = GUICtrlGetHandle( $cListView_WindowList )    
 ;apparently you can checkboxes twice to get an extra space for a supposed checkbox or smth...
@@ -692,7 +692,7 @@ Func ListViewUpdateWindows($LVctrl)
 		If _ArraySearch($aArrayFinal, $LVItemArray[$rowInt-$delOffset][3], 0, 0, 0, 0, 1, 1, False) == -1 Then
 			;delete the right listview control
 			;MsgBox($MB_OK, "test",$LVItemArray[$rowInt][0] & "|" & $LVItemArray[$rowInt][1])
-			GUICtrlDelete($LVItemArray[$rowInt][0]-$delOffset)
+			GUICtrlDelete($LVItemArray[$rowInt-$delOffset][0]-$delOffset)
 			;delete the array row and resize appropriately (_arraydelete does this apparently)
 			_ArrayDelete($LVItemArray, $rowInt)
 			$delOffset += 1
