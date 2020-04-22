@@ -183,7 +183,7 @@ $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
 
 Global $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200) ;$LVS_SHOWSELALWAYS
 
-_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES));$LVS_EX_GRIDLINES
+_GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT));$LVS_EX_GRIDLINES
 
 Global $hListView = GUICtrlGetHandle( $cListView_WindowList )    
 ;apparently you can checkboxes twice to get an extra space for a supposed checkbox or smth...
@@ -651,7 +651,7 @@ Func ListViewUpdateWindows($LVctrl)
 		;have to manually remove program manager I think
 		If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then
 			_ArrayAdd($aListFiltered, $aList[$i][1])
-			_ArrayAdd($aTitles, $aList[$i][0])
+			_ArrayAdd($aTitles, StringRegExpReplace($aList[$i][0],"\|","_"))
 		EndIf
 	Next
 	;make empty array
@@ -666,20 +666,7 @@ Func ListViewUpdateWindows($LVctrl)
 		;$aArrayFinal[$i][0] = _ProcessGetName(WinGetProcess($aListFiltered[$i]))
 		;there is a problem when something like firefox has "|" in the title... i have to filter that char out
 		
-		; Here is the string
-		$sString = $aTitles[$i]
-
-		; Now split it into individual characters
-		$aChars = StringSplit($sString, "")
-
-		; Now loop through them - the count is in the [0] element
-		For $x = 1 To $aChars[0]
-			If $aChars[$x] <> "|" Then
-				$sFiltered &= $aChars[$x]
-			EndIf
-		Next
-		
-		$aArrayFinal[$i][0] = $sFiltered
+		$aArrayFinal[$i][0] = $aTitles[$i]
 		;HWND
 		$aArrayFinal[$i][1] = $aListFiltered[$i]
 		;exe name
@@ -705,7 +692,7 @@ Func ListViewUpdateWindows($LVctrl)
 		If _ArraySearch($aArrayFinal, $LVItemArray[$rowInt-$delOffset][3], 0, 0, 0, 0, 1, 1, False) == -1 Then
 			;delete the right listview control
 			;MsgBox($MB_OK, "test",$LVItemArray[$rowInt][0] & "|" & $LVItemArray[$rowInt][1])
-			GUICtrlDelete($LVItemArray[$rowInt][0]-$delOffset)
+			GUICtrlDelete($LVItemArray[$rowInt-$delOffset][0]-$delOffset)
 			;delete the array row and resize appropriately (_arraydelete does this apparently)
 			_ArrayDelete($LVItemArray, $rowInt)
 			$delOffset += 1

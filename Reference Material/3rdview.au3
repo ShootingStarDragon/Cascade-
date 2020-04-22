@@ -219,7 +219,6 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	Next
 	_ArrayAdd($LVItemArray, $LVItemArrayItem)
 	_ArrayAdd($aIndexList, $IndexCounter)
-	;_ArrayAdd($aIndexList, UBound($aIndexList, $1) - 1)
 	$IndexCounter += 1
 Next
 _ArrayDelete($aIndexList, 0)
@@ -348,8 +347,7 @@ While 1
 		Case $Label12
 			ListViewUpdateWindows($cListView_WindowList)
 		Case $Label13
-			;_ArrayDisplay($LVItemArray)
-			_ArrayDisplay($aIndexList)
+			_ArrayDisplay($LVItemArray)
 		Case $Label14
 			;if no monitor is set, do nothing:
 			If String(GUICtrlRead($Label6b)) == String("") Then
@@ -472,16 +470,16 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 					;_ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) & "|" &
 					; $aHit[0] & "|" & $aHit[1] & "|" &
 					;MsgBox($MB_OK, "is this an index or what??",  $aHit[0] >= 0 And $aHit[1] >= 3)
-					;_ArrayDisplay($aIndexList)
-					;MsgBox($MB_OK, "is this an index or what??", _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1)
-					;MsgBox($MB_OK, "is this an index or what??", DllStructGetData($tInfo, "Index"))
+					
+					MsgBox($MB_OK, "is this an index or what??",  _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1)
 					;PROBLEM: _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 SAYS TRUE
-					;If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
-                    ;    If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
-                    ;        _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
-                    ;    Return 1
-					If $aHit[0] >= 0 And $aHit[1] >= 3 Then                                                		   	    ; Item and subitem
-						;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
+					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
+                        If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
+                            _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
+                        Return 1
+					ElseIf $aHit[0] >= 0 And $aHit[1] >= 3 Then                                                		   	    ; Item and subitem
+						;
+						MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
 						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      		; Get checkbox icon
 						_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) 		; Toggle checkbox icon
 						;update the LVItemArray array
