@@ -398,8 +398,10 @@ Func _UpdateInfo()
     ;GUICtrlSetColor($Label3b, 0x00FF00)
 	;update monitor the mouse is on
 	;_WinAPI_GetMonitorInfo can not have the display so i need to check the length of this to be at least 4 to proceed:
-	If UBound(_WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))) > 3 Then
-		GUICtrlSetData($Label1b, _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))[3])
+	$MouseData = _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))
+	;     		 _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))[3]
+	If UBound($MouseData) > 3 Then
+		GUICtrlSetData($Label1b, $MouseData[3])
 	Else
 		GUICtrlSetData($Label1b, "Error, please wait.")
 	EndIf
@@ -691,22 +693,26 @@ Func ListViewUpdateWindows($LVctrl)
 		;_ArrayDisplay($LVItemArray)
 	;	Redim $LVItemArray[1][UBound($LVItemArray,2)+1]
 	;Next
-	;_ArrayDisplay($aArrayFinal)
-	;_ArrayDisplay($LVItemArray)
+	_ArrayDisplay($aArrayFinal)
+	_ArrayDisplay($LVItemArray)
+	
 	$delOffset = 0
 	For $rowInt = 0 To UBound($LVItemArray,1)-1
 		;GUICtrlRead ( controlID [, advanced = 0] )
 		;MsgBox($MB_OK, "test arraysearch",_ArraySearch($aArrayFinal, $LVItemArray[$rowInt][3], 0, 0, 0, 0, 1, 1, False))
 		;read the array instead and remember to delete the right listviewitem
 		If _ArraySearch($aArrayFinal, $LVItemArray[$rowInt-$delOffset][3], 0, 0, 0, 0, 1, 1, False) == -1 Then
+			;i think i should make sure i dont delete too many so check if the item is actually in the array as well
 			;delete the right listview control
 			;MsgBox($MB_OK, "test",$LVItemArray[$rowInt][0] & "|" & $LVItemArray[$rowInt][1])
 			GUICtrlDelete($LVItemArray[$rowInt-$delOffset][0]-$delOffset)
 			;delete the array row and resize appropriately (_arraydelete does this apparently)
-			_ArrayDelete($LVItemArray, $rowInt)
+			;_ArrayDelete($LVItemArray, $rowInt)
+			_ArrayDelete($LVItemArray, $rowInt-$delOffset)
 			$delOffset += 1
 		EndIf
 	Next
+
 	For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 		;MsgBox($MB_OK, "searching for|what does arraysearch say",$aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1] & "|" & _ArraySearch($LVItemArray, $aArrayFinal[$rowInt][1], 0, 0, 0, 0, 1, 3, False))
 		;search for hwnd
