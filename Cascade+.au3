@@ -450,6 +450,14 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
     Switch $hWndFrom
         Case $hWndListView
             Switch $iCode
+				;this is to allow me to sort out the listview by clicking columns
+				Switch DllStructGetData($tNMHDR, "Code")
+					Case $LVN_COLUMNCLICK ; A column was clicked
+						;MsgBox($MB_OK,"look for title pos",$aHit[0] & "|" & $aHit[1])
+						Local $tInfo = DllStructCreate($tagNMLISTVIEW, $lParam)
+						Local $iCol = DllStructGetData($tInfo, "SubItem")
+						ConsoleWrite("Column clicked: " & $iCol & @CRLF)
+				EndSwitch
 				Case $LVN_BEGINDRAG
 					Global $initIndex = _GUICtrlListView_GetHotItem($hListView)
 					;MsgBox($MB_OK, "is this an index or what??", "not declared")
@@ -482,6 +490,7 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
                     ;    If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
                     ;        _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
                     ;    Return 1
+					;MsgBox($MB_OK,"look for title pos",$aHit[0] & "|" & $aHit[1])
 					If $aHit[0] >= 0 And $aHit[1] >= 3 Then                                                		   	    ; Item and subitem
 						;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
 						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      		; Get checkbox icon
@@ -554,7 +563,8 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
 		;end index
 		$endmem = $LVItemArray[$initIndex][0]
 		;update the array 
-		_ArraySwap ( $LVItemArray, $g_aIndex, $initIndex, False)
+		_ArraySwap($LVItemArray, $g_aIndex, $initIndex, False)
+		;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
 		
 		;switch back the control IDs
 		$LVItemArray[$initIndex][0] = $endmem
@@ -747,6 +757,10 @@ Func ListViewUpdateWindows($LVctrl)
 			_ArrayAdd ( $aIndexList, $IndexCounter)
 		EndIf
 	Next
+	
+	_ArrayDisplay($aArrayFinal)
+	_ArrayDisplay($LVItemArray)
+	
 	;_ArrayDisplay($LVItemArray)
 	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
 	_ArrayDelete ( $aIndexList, 0 )
