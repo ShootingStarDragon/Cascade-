@@ -194,7 +194,7 @@ Local $hStateImageList = _GUICtrlListView_GetImageList( $cListView_WindowList, 2
 _GUICtrlListView_SetImageList( $hListView, $hStateImageList, 1 ) ; 1 = Image list with small icons
 ; Register WM_NOTIFY message handler
 ;You will need to register some Windows messages so that the UDF can intercept various key and mouse events and determine the correct actions to take. 
-GUIRegisterMsg( $WM_NOTIFY, "WM_NOTIFY" )
+GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
 GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
 Local $IndexCounter = 0
 
@@ -218,7 +218,8 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 		$LVItemArrayItem &= "|" & 0
 	Next
 	_ArrayAdd($LVItemArray, $LVItemArrayItem)
-	_ArrayAdd ( $aIndexList, $IndexCounter)
+	_ArrayAdd($aIndexList, $IndexCounter)
+	;_ArrayAdd($aIndexList, UBound($aIndexList, $1) - 1)
 	$IndexCounter += 1
 Next
 _ArrayDelete($aIndexList, 0)
@@ -347,7 +348,8 @@ While 1
 		Case $Label12
 			ListViewUpdateWindows($cListView_WindowList)
 		Case $Label13
-			_ArrayDisplay($LVItemArray)
+			;_ArrayDisplay($LVItemArray)
+			_ArrayDisplay($aIndexList)
 		Case $Label14
 			;if no monitor is set, do nothing:
 			If String(GUICtrlRead($Label6b)) == String("") Then
@@ -396,8 +398,10 @@ Func _UpdateInfo()
     ;GUICtrlSetColor($Label3b, 0x00FF00)
 	;update monitor the mouse is on
 	;_WinAPI_GetMonitorInfo can not have the display so i need to check the length of this to be at least 4 to proceed:
-	If UBound(_WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))) > 3 Then
-		GUICtrlSetData($Label1b, _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))[3])
+	$MouseData = _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))
+	;     		 _WinAPI_GetMonitorInfo(_WinOnMonitor(MouseGetPos()[0],MouseGetPos()[1]))[3]
+	If UBound($MouseData) > 3 Then
+		GUICtrlSetData($Label1b, $MouseData[3])
 	Else
 		GUICtrlSetData($Label1b, "Error, please wait.")
 	EndIf
@@ -446,6 +450,24 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
     Switch $hWndFrom
         Case $hWndListView
             Switch $iCode
+				;this is to allow me to sort out the listview by clicking columns
+				Case $LVN_COLUMNCLICK ; A column was clicked
+					Local $tInfo = DllStructCreate($tagNMLISTVIEW, $ilParam)
+					Local $iCol = DllStructGetData($tInfo, "SubItem")
+					MsgBox($MB_OK,"look for title pos",$iCol)
+					#comments-start
+					for each item in the listview
+						if that item is checked yes on the column that was selected
+							if 
+								there is an empty space above, then swap positions 
+								also swap positions in the listview array
+								then delete the 1st position of the empty positions list
+							else
+								pass
+						else:
+							remember the pos of this "blank" space
+					#comments-end
+					;ConsoleWrite("Column clicked: " & $iCol & @CRLF)
 				Case $LVN_BEGINDRAG
 					Global $initIndex = _GUICtrlListView_GetHotItem($hListView)
 					;MsgBox($MB_OK, "is this an index or what??", "not declared")
@@ -467,11 +489,19 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 					#comments-end
 					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
 					Local $aHit = _GUICtrlListView_SubItemHitTest( $hListView )
-					If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
-                        If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
-                            _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
-                        Return 1
-					ElseIf $aHit[0] >= 0 And $aHit[1] >= 3 Then                                                		   	    ; Item and subitem
+					;_ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) & "|" &
+					; $aHit[0] & "|" & $aHit[1] & "|" &
+					;MsgBox($MB_OK, "is this an index or what??",  $aHit[0] >= 0 And $aHit[1] >= 3)
+					;_ArrayDisplay($aIndexList)
+					;MsgBox($MB_OK, "is this an index or what??", _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1)
+					;MsgBox($MB_OK, "is this an index or what??", DllStructGetData($tInfo, "Index"))
+					;PROBLEM: _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 SAYS TRUE
+					;If _ArraySearch($aIndexList,DllStructGetData($tInfo, "Index")) <> -1 Then
+                    ;    If Not _GUICtrlListView_GetItemSelected($hListView, DllStructGetData($tInfo, "Index")) Then _
+                    ;        _GUICtrlListView_SetItemSelected($hListView, DllStructGetData($tInfo, "Index"), True, True)
+                    ;    Return 1
+					;MsgBox($MB_OK,"look for title pos",$aHit[0] & "|" & $aHit[1])
+					If $aHit[0] >= 0 And $aHit[1] >= 3 Then                                                		   	    ; Item and subitem
 						;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
 						Local $iIcon = _GUICtrlListView_GetItemImage( $cListView_WindowList, $aHit[0], $aHit[1] )      		; Get checkbox icon
 						_GUICtrlListView_SetItemImage( $cListView_WindowList, $aHit[0], $iIcon = 0 ? 1 : 0, $aHit[1] ) 		; Toggle checkbox icon
@@ -543,7 +573,8 @@ Func WM_LBUTTONUP($hWndGUI, $iMsgID, $wParam, $lParam)
 		;end index
 		$endmem = $LVItemArray[$initIndex][0]
 		;update the array 
-		_ArraySwap ( $LVItemArray, $g_aIndex, $initIndex, False)
+		_ArraySwap($LVItemArray, $g_aIndex, $initIndex, False)
+		;MsgBox ( $MB_OK, "title", $aHit[0] & "|" & $aHit[1])
 		
 		;switch back the control IDs
 		$LVItemArray[$initIndex][0] = $endmem
@@ -682,22 +713,26 @@ Func ListViewUpdateWindows($LVctrl)
 		;_ArrayDisplay($LVItemArray)
 	;	Redim $LVItemArray[1][UBound($LVItemArray,2)+1]
 	;Next
-	;_ArrayDisplay($aArrayFinal)
-	;_ArrayDisplay($LVItemArray)
+	_ArrayDisplay($aArrayFinal)
+	_ArrayDisplay($LVItemArray)
+	
 	$delOffset = 0
 	For $rowInt = 0 To UBound($LVItemArray,1)-1
 		;GUICtrlRead ( controlID [, advanced = 0] )
 		;MsgBox($MB_OK, "test arraysearch",_ArraySearch($aArrayFinal, $LVItemArray[$rowInt][3], 0, 0, 0, 0, 1, 1, False))
 		;read the array instead and remember to delete the right listviewitem
 		If _ArraySearch($aArrayFinal, $LVItemArray[$rowInt-$delOffset][3], 0, 0, 0, 0, 1, 1, False) == -1 Then
+			;i think i should make sure i dont delete too many so check if the item is actually in the array as well
 			;delete the right listview control
 			;MsgBox($MB_OK, "test",$LVItemArray[$rowInt][0] & "|" & $LVItemArray[$rowInt][1])
 			GUICtrlDelete($LVItemArray[$rowInt-$delOffset][0]-$delOffset)
 			;delete the array row and resize appropriately (_arraydelete does this apparently)
-			_ArrayDelete($LVItemArray, $rowInt)
+			;_ArrayDelete($LVItemArray, $rowInt)
+			_ArrayDelete($LVItemArray, $rowInt-$delOffset)
 			$delOffset += 1
 		EndIf
 	Next
+
 	For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 		;MsgBox($MB_OK, "searching for|what does arraysearch say",$aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1] & "|" & _ArraySearch($LVItemArray, $aArrayFinal[$rowInt][1], 0, 0, 0, 0, 1, 3, False))
 		;search for hwnd
@@ -732,6 +767,10 @@ Func ListViewUpdateWindows($LVctrl)
 			_ArrayAdd ( $aIndexList, $IndexCounter)
 		EndIf
 	Next
+	
+	_ArrayDisplay($aArrayFinal)
+	_ArrayDisplay($LVItemArray)
+	
 	;_ArrayDisplay($LVItemArray)
 	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
 	_ArrayDelete ( $aIndexList, 0 )

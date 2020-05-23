@@ -451,13 +451,66 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
         Case $hWndListView
             Switch $iCode
 				;this is to allow me to sort out the listview by clicking columns
-				Switch DllStructGetData($tNMHDR, "Code")
-					Case $LVN_COLUMNCLICK ; A column was clicked
-						;MsgBox($MB_OK,"look for title pos",$aHit[0] & "|" & $aHit[1])
-						Local $tInfo = DllStructCreate($tagNMLISTVIEW, $lParam)
-						Local $iCol = DllStructGetData($tInfo, "SubItem")
-						ConsoleWrite("Column clicked: " & $iCol & @CRLF)
-				EndSwitch
+				Case $LVN_COLUMNCLICK ; A column was clicked
+					Local $tInfo = DllStructCreate($tagNMLISTVIEW, $ilParam)
+					Local $iCol = DllStructGetData($tInfo, "SubItem")
+					;MsgBox($MB_OK,"look for title pos",$iCol)
+					
+					$BlankRowList = 0
+					Local $BlankRowList[UBound($LVItemArray, 1)]
+					For $BlankRowInit = 0 to UBound($BlankRowList, 1)-1
+						$BlankRowList[$BlankRowInit] = 0
+					Next
+					
+					;for each item in the listview
+					For $rowInt = 0 To UBound($LVItemArray, 1)-1
+						;if that item is checked yes on the column that was selected
+						;here i assume 1 for item image is checked. also assuming iCol and rowInt don't go out of bounds
+						If 1 ==_GUICtrlListView_GetItemImage( $cListView_WindowList, $rowInt, $iCol) Then
+							;if there is an empty space above, 
+							;IF IsNumber($BlankRowList[0]) Then
+							;search for a 1 in BlankRowList that is earlier than current $rowInt
+							$Test = _ArraySearch($BlankRowList, 1)
+							;If $BlankRowList[0] <> $rowInt  Then
+							If $Test < $rowInt And $Test <> -1 Then
+								;then swap positions (;also swap positions in the listview array)
+
+								;start index
+								$startmem = $LVItemArray[$Test][0]
+								;end index
+								$endmem = $LVItemArray[$rowInt][0]
+								;update the array 
+								_ArraySwap($LVItemArray, $Test, $rowInt, False)
+								;switch back the control IDs
+								$LVItemArray[$rowInt][0] = $endmem
+								$LVItemArray[$Test][0] = $startmem
+								
+								;then reset the 1 to a 0
+								$BlankRowList[$Test] = 0
+								;also when u switch the new spot is a blank now as well
+								$BlankRowList[$rowInt] = 1
+								;else
+									;pass
+							EndIf
+							Else
+								;set that value in BlankRowList to 1
+								$BlankRowList[$rowInt] = 1
+						EndIf
+					Next
+					;redraw listview at the end
+					;redraw the listview
+					For $i = 0 To UBound($LVItemArray,1) - 1
+						$blankstr = $LVItemArray[$i][1]
+						For $x = 2 To UBound($LVItemArray,2) - 3
+							$blankstr &= "|" & $LVItemArray[$i][$x]
+						Next
+						GUICtrlSetData($LVItemArray[$i][0], $blankstr)
+						;update checkboxes
+						For $imonitor = 0 To $Monitors[0][0]-1
+							_GUICtrlListView_SetItemImage( $cListView_WindowList, $i, $LVItemArray[$i][4 + $imonitor], 3 + $imonitor)
+						Next
+					Next
+					;ConsoleWrite("Column clicked: " & $iCol & @CRLF)
 				Case $LVN_BEGINDRAG
 					Global $initIndex = _GUICtrlListView_GetHotItem($hListView)
 					;MsgBox($MB_OK, "is this an index or what??", "not declared")
