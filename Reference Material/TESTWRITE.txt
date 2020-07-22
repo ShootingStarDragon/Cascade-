@@ -1,0 +1,4 @@
+Start of the FileWrite example, line 1. 
+Line 2This is still line 2 as a new line wasn't appended to the last FileWrite call.
+Line 3
+Line 4
