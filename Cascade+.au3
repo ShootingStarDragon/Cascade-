@@ -174,6 +174,7 @@ $Label12 = GUICtrlCreateButton("Refresh Window List", 120, 430, 120, 20)
 $Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20);used to check arraystates when debugging
 $Label14 = GUICtrlCreateButton("Update Coordinates", 220, 120, 120, 20)
 $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
+$Label16 = GUICtrlCreateButton("Check ini", 340, 140, 120, 20)
 
 ;OnLoad: make sure init file exists. if not, create it
 
@@ -208,8 +209,10 @@ Local $IndexCounter = 0
 
 For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;MsgBox ( $MB_OK, "start of MY ROW", "")
+	
 	;init with name
 	Local $blankStr = $aArrayFinal[$rowInt][0] & "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
+	
 	;add title
 	$LVItem = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
 	
@@ -222,8 +225,15 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	$LVItemArrayItem =  $LVItem & "|" & $blankStr
 	;add the checkboxes per monitor
 	For $imonitor = 0 To $Monitors[0][0]-1
-		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3 + $imonitor) 
-		$LVItemArrayItem &= "|" & 0
+		If IniRead("CascadePrev.ini", "LastSession", $aArrayFinal[$rowInt][2], "ERR") == $imonitor+1 Then
+			;MsgBox($MB_OK , "woot", $aArrayFinal[$rowInt][2] & "|" & IniRead("CascadePrev.ini", "LastSession", $aArrayFinal[$rowInt][2], "ERR") & "|" & $imonitor)
+			_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 1, 3 + $imonitor) 
+			$LVItemArrayItem &= "|" & 1
+		Else
+			;MsgBox($MB_OK , "woot", $aArrayFinal[$rowInt][2] & "|" & IniRead("CascadePrev.ini", "LastSession", $aArrayFinal[$rowInt][2], "ERR") & "|" & $imonitor)
+			_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3 + $imonitor) 
+			$LVItemArrayItem &= "|" & 0
+		EndIf
 	Next
 	_ArrayAdd($LVItemArray, $LVItemArrayItem)
 	_ArrayAdd($aIndexList, $IndexCounter)
@@ -405,6 +415,24 @@ While 1
 				;final x/y
 				$MonitorCoords[$i+1][3] = MonitoInfo()[$i+1][0] + 200
 				$MonitorCoords[$i+1][4] = MonitoInfo()[$i+1][1]
+			Next
+		Case $Label16
+			For $i = 0 To UBound($LVItemArray) - 1 
+				;check the right window assoc with the current app
+				$window = 0
+				For $j = 3 to UBound($LVItemArray,2) - 1 
+					If $LVItemArray[$i][$j] == 1 Then
+						$window = $LVItemArray[$i][$j]
+					EndIf
+				Next
+				MsgBox($MB_OK , "woot", $LVItemArray[$i][2] & "|" & IniRead("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") & "|" & $window)
+				;write if not found
+				If IniRead("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") == "ERR" Then
+					IniWrite("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
+				;update if not the same
+				ElseIf IniRead("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") <> $window Then
+					IniWrite("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
+				EndIf
 			Next
 	EndSwitch
 WEnd
