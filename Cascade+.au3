@@ -35,10 +35,8 @@ Local $aTitles[0]
 ;filter winlist to get rid of windows with no titles and manually remove program manager
 For $i = 1 to $aList[0][0]
 	;have to manually remove program manager I think
-	If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then
-		
-		;there is a problem when something like firefox has "|" in the title... i have to filter that char out
-		
+	If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then		
+		;there is a problem when something like firefox has "|" in the title... i have to filter that char out		
 		_ArrayAdd($aListFiltered, $aList[$i][1])
 		_ArrayAdd($aTitles, StringRegExpReplace($aList[$i][0],"\|","_"))
 	EndIf
@@ -121,7 +119,7 @@ Next
 _ArryRemoveBlanks($MonitorArray)
 
 ;GUICreate ( "title" [, width [, height [, left = -1 [, top = -1 [, style = -1 [, exStyle = -1 [, parent = 0]]]]]]] )
-$hGUI = GUICreate("Cascade+",500,500,-1,-1,$WS_SIZEBOX )
+$hGUI = GUICreate("Cascade+",600,500,-1,-1,$WS_SIZEBOX )
 ;To be able to resize a GUI window it needs to have been created with the $WS_SIZEBOX and $WS_SYSMENU styles. See GUICreate().
 
 ;init the coord datas for each monitor:
@@ -177,11 +175,21 @@ $Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20);used to check a
 $Label14 = GUICtrlCreateButton("Update Coordinates", 220, 120, 120, 20)
 $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
 
+;OnLoad: make sure init file exists. if not, create it
+
+If FileExists ("CascadePrev.ini") Then
+	;MsgBox($MB_OK, "cascade succ", "wut")
+Else
+	;MsgBox($MB_OK, "cascade fail", "wot")
+	FileOpen ("CascadePrev.ini",1 )
+	FileWrite("CascadePrev.ini", "[LastSession]")
+EndIf
+
 ;It is important to use _GUIListViewEx_Close when a enabled ListView is deleted to free the memory used
 ;                    by the $aGLVEx_Data array which shadows the ListView contents.
 ;_GUIListViewEx_Close($iLV_Index)
 
-Global $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200) ;$LVS_SHOWSELALWAYS
+Global $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 550, 200) ;$LVS_SHOWSELALWAYS
 
 _GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT));$LVS_EX_GRIDLINES
 
@@ -246,6 +254,23 @@ While 1
 	
 	Switch GUIGetMsg()
 		Case $GUI_EVENT_CLOSE
+			;write down app name and which monitor it was at			
+			For $i = 0 To UBound($LVItemArray) - 1 
+				;check the right window assoc with the current app
+				$window = 0
+				For $j = 3 to UBound($LVItemArray,2) - 1 
+					If $LVItemArray[$i][$j] == 1 Then
+						$window = $LVItemArray[$i][$j]
+					EndIf
+				Next
+				;write if not found
+				If IniRead ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") == "ERR" Then
+					IniWrite ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
+				;update if not the same
+				ElseIf IniRead ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") <> $window Then
+					IniWrite ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
+				EndIf
+			Next
 			Exit
 		Case $hCombo
 			$sComboRead = GUICtrlRead($hCombo)
