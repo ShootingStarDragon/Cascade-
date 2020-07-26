@@ -241,8 +241,6 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	$IndexCounter += 1
 Next
 
-
-
 ;copy array to arraycopy
 ;rewrite in the right order from arraycopy to array
 
@@ -256,6 +254,8 @@ _ArrayDelete($LVItemArray, 0)
 
 ;last pos so i can set the pos differently for each monitor
 $lastpos = 0
+;this is the beginningpos for in-window sorting
+$beginningpos = 0
 ;_ArrayDisplay($LVItemArray)
 For $imonitor = 0 To $Monitors[0][0]-1
 	;sort out per monitor
@@ -293,22 +293,50 @@ For $imonitor = 0 To $Monitors[0][0]-1
 				;MsgBox($MB_OK ,"pick a monitor","set to 0" &"|"& $Test)
 				;attempt to set lastpos. if lastpos is larger than our current pos, skip
 				If $lastpos < $Test+1 Then
-				$lastpos = $Test+1
+					$lastpos = $Test+1
+					
 				EndIf
 			EndIf
 		Else
 			;set that value in BlankRowList to 1
 			$BlankRowList[$lastIndexVar] = 1
-			;			
-			MsgBox($MB_OK ,"pick a monitor",$lastIndexVar & "|" & $BlankRowList[$lastIndexVar])
-			;			
-			_ArrayDisplay($BlankRowList)
-			;			
-			_ArrayDisplay($LVItemArray)
+			;MsgBox($MB_OK ,"pick a monitor",$lastIndexVar & "|" & $BlankRowList[$lastIndexVar])
+			;_ArrayDisplay($BlankRowList)
+			;_ArrayDisplay($LVItemArray)
 		EndIf
 	Next
 	;when you are done sorting Per-monitor, then you sort each window section from beginningpos(?) to endpos(?)
-	
+	$endpos = _ArraySearch($BlankRowList, 1)
+	For $sortpos = $beginningpos+1 To $endpos-1
+		;position of current app in the ini file
+		$appPos = IniRead("CascadePrev.ini", "LastSessionPOS", $LVItemArray[$sortpos][2] & "POS", "DEFFAIL")
+		$appID = $LVItemArray[$sortpos][0]
+		;go back to the beginning to compare and sort
+		For $sortposb = $beginningpos To $sortpos
+			MsgBox ( $MB_OK, "title", "indexpos current check VS checking against " &"|"& $sortpos &"|"& $sortposb)
+			MsgBox ( $MB_OK, "title", "current and previous compares " &"|"& $LVItemArray[$sortpos][2] &"|"& $LVItemArray[$sortposb][2])
+			$prevappPos = IniRead("CascadePrev.ini", "LastSessionPOS", $LVItemArray[$sortposb][2] & "POS", "DEFFAIL")
+			$prevappID = $LVItemArray[$sortposb][0]
+			MsgBox ( $MB_OK, "title", "comarpingb " &"|"& $appPos &"|"& $prevappPos )
+			MsgBox ( $MB_OK, "title",  Int($appPos) < Int($prevappPos))
+			;comparing 1 to 1 is whatevs
+			;insert at the first time when the current pos is less than the pos i am checking
+			;if current pos in ini is smaller than prevpos, switch
+			If Int($appPos) < Int($prevappPos) Then
+				MsgBox ( $MB_OK, "title", "SWAP")
+				_ArrayDisplay($LVItemArray)
+				;remember to swap the control ID's then u swap to preserve order...
+				$LVItemArray[$sortpos][0]  = $prevappID
+				$LVItemArray[$sortposb][0] = $appID
+				_ArraySwap($LVItemArray, $sortpos, $sortposb)
+				_ArrayDisplay($LVItemArray)
+				;since we swap, set checking against (sortposb) to the end to force end
+				$sortposb = $sortpos
+			EndIf
+		Next
+	Next
+	;also set beginningpos to lastpos when you are done sorting
+	$beginningpos = $lastpos
 Next
 _ArrayDisplay($LVItemArray)
 ;redraw the listview to reflect LVItemArray update
@@ -361,6 +389,8 @@ While 1
 				ElseIf IniRead ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") <> $window Then
 					IniWrite ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
 				EndIf
+				;write the current pos of the window
+				IniWrite ( "CascadePrev.ini", "LastSessionPOS", $LVItemArray[$i][2] & "POS", $LVItemArray[$i][0])
 			Next
 			Exit
 		Case $hCombo
