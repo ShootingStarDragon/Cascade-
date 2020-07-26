@@ -35,10 +35,8 @@ Local $aTitles[0]
 ;filter winlist to get rid of windows with no titles and manually remove program manager
 For $i = 1 to $aList[0][0]
 	;have to manually remove program manager I think
-	If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then
-		
-		;there is a problem when something like firefox has "|" in the title... i have to filter that char out
-		
+	If $aList[$i][0] <> "" And BitAND(WinGetState($aList[$i][1]), 2) == 2 And $aList[$i][0] <> "Program Manager" Then		
+		;there is a problem when something like firefox has "|" in the title... i have to filter that char out		
 		_ArrayAdd($aListFiltered, $aList[$i][1])
 		_ArrayAdd($aTitles, StringRegExpReplace($aList[$i][0],"\|","_"))
 	EndIf
@@ -121,7 +119,7 @@ Next
 _ArryRemoveBlanks($MonitorArray)
 
 ;GUICreate ( "title" [, width [, height [, left = -1 [, top = -1 [, style = -1 [, exStyle = -1 [, parent = 0]]]]]]] )
-$hGUI = GUICreate("Cascade+",500,500,-1,-1,$WS_SIZEBOX )
+$hGUI = GUICreate("Cascade+",600,500,-1,-1,$WS_SIZEBOX )
 ;To be able to resize a GUI window it needs to have been created with the $WS_SIZEBOX and $WS_SYSMENU styles. See GUICreate().
 
 ;init the coord datas for each monitor:
@@ -176,12 +174,23 @@ $Label12 = GUICtrlCreateButton("Refresh Window List", 120, 430, 120, 20)
 $Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20);used to check arraystates when debugging
 $Label14 = GUICtrlCreateButton("Update Coordinates", 220, 120, 120, 20)
 $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
+$Label16 = GUICtrlCreateButton("Check ini", 340, 140, 120, 20)
+
+;OnLoad: make sure init file exists. if not, create it
+
+If FileExists ("CascadePrev.ini") Then
+	;MsgBox($MB_OK, "cascade succ", "wut")
+Else
+	;MsgBox($MB_OK, "cascade fail", "wot")
+	FileOpen ("CascadePrev.ini",1 )
+	FileWrite("CascadePrev.ini", "[LastSession]")
+EndIf
 
 ;It is important to use _GUIListViewEx_Close when a enabled ListView is deleted to free the memory used
 ;                    by the $aGLVEx_Data array which shadows the ListView contents.
 ;_GUIListViewEx_Close($iLV_Index)
 
-Global $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 400, 200) ;$LVS_SHOWSELALWAYS
+Global $cListView_WindowList = GUICtrlCreateListView($sHeaders, 10, 220, 550, 200) ;$LVS_SHOWSELALWAYS
 
 _GUICtrlListView_SetExtendedListViewStyle($cListView_WindowList, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT));$LVS_EX_GRIDLINES
 
@@ -200,8 +209,10 @@ Local $IndexCounter = 0
 
 For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;MsgBox ( $MB_OK, "start of MY ROW", "")
+	
 	;init with name
 	Local $blankStr = $aArrayFinal[$rowInt][0] & "|" & $aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1]
+	
 	;add title
 	$LVItem = GUICtrlCreateListViewItem ( $blankStr, $cListView_WindowList)
 	
@@ -214,16 +225,85 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	$LVItemArrayItem =  $LVItem & "|" & $blankStr
 	;add the checkboxes per monitor
 	For $imonitor = 0 To $Monitors[0][0]-1
-		_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3 + $imonitor) 
-		$LVItemArrayItem &= "|" & 0
+		If IniRead("CascadePrev.ini", "LastSession", $aArrayFinal[$rowInt][2], "ERR") == $imonitor+1 Then
+			_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 1, 3 + $imonitor) 
+			$LVItemArrayItem &= "|" & 1
+		Else
+			_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3 + $imonitor) 
+			$LVItemArrayItem &= "|" & 0
+		EndIf
 	Next
 	_ArrayAdd($LVItemArray, $LVItemArrayItem)
 	_ArrayAdd($aIndexList, $IndexCounter)
 	;_ArrayAdd($aIndexList, UBound($aIndexList, $1) - 1)
 	$IndexCounter += 1
 Next
+
+
+
+;copy array to arraycopy
+;rewrite in the right order from arraycopy to array
+
+;sort by window1
+;then amongst window1, sort by ini file pos
+;repeat per window
+;put all the blank windows at the end
+
 _ArrayDelete($aIndexList, 0)
 _ArrayDelete($LVItemArray, 0)
+
+;last pos so i can set the pos differently for each monitor
+$lastpos = 0
+;_ArrayDisplay($LVItemArray)
+For $imonitor = 0 To $Monitors[0][0]-1
+	;sort out per monitor
+	$BlankRowList = $lastpos
+	Local $BlankRowList[UBound($LVItemArray, 1)]
+	For $BlankRowInit = 0 to UBound($BlankRowList, 1)-1
+		$BlankRowList[$BlankRowInit] = 0
+	Next
+	For $lastIndexVar = $lastpos To UBound($LVItemArray,1) - 1
+		;remember the last empty spot in the array for this monitor
+		
+		;remember to manipulate both the LVItem array AND the actual listview
+		;update the array
+		;switch the control ID's
+		If 1 == $LVItemArray[$lastIndexVar][$imonitor+4] Then
+			;MsgBox($MB_OK ,"pick a monitor","hello")
+			;_ArrayDisplay($BlankRowList)
+			;search for a 1 in BlankRowList that is earlier than current $lastIndexVar
+			$Test = _ArraySearch($BlankRowList, 1)
+			If $Test < $lastIndexVar And $Test <> -1 Then
+				;then swap positions (;also swap positions in the listview array)
+				;start index
+				$startmem = $LVItemArray[$Test][0]
+				;end index
+				$endmem = $LVItemArray[$lastIndexVar][0]
+				;update the array 
+				_ArraySwap($LVItemArray, $Test, $lastIndexVar, False)
+				;switch back the control IDs
+				$LVItemArray[$lastIndexVar][0] = $endmem
+				$LVItemArray[$Test][0] = $startmem
+				;then reset the 1 to a 0
+				$BlankRowList[$Test] = 0
+				;also when u switch the new spot is a blank now as well
+				$BlankRowList[$lastIndexVar] = 1
+				;MsgBox($MB_OK ,"pick a monitor","set to 0" &"|"& $Test)
+				;attempt to set lastpos. if lastpos is larger than our current pos, skip
+				If $lastpos < $lastIndexVar Then
+				$lastpos = $lastIndexVar
+				EndIf
+			EndIf
+		Else
+			;set that value in BlankRowList to 1
+			$BlankRowList[$lastIndexVar] = 1
+			;MsgBox($MB_OK ,"pick a monitor",$lastIndexVar & "|" & $BlankRowList[$lastIndexVar])
+			;_ArrayDisplay($BlankRowList)
+			;_ArrayDisplay($LVItemArray)
+		EndIf
+	Next
+	;remember to set lastpos
+Next
 
 ;redraw everything so checkboxes get removed
 _WinAPI_RedrawWindow($hListView)
@@ -246,6 +326,23 @@ While 1
 	
 	Switch GUIGetMsg()
 		Case $GUI_EVENT_CLOSE
+			;write down app name and which monitor it was at			
+			For $i = 0 To UBound($LVItemArray) - 1 
+				;check the right window assoc with the current app
+				$window = 0
+				For $j = 4 to UBound($LVItemArray,2) - 1 
+					If $LVItemArray[$i][$j] == 1 Then
+						$window = $j-3
+					EndIf
+				Next
+				;write if not found
+				If IniRead ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") == "ERR" Then
+					IniWrite ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
+				;update if not the same
+				ElseIf IniRead ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") <> $window Then
+					IniWrite ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
+				EndIf
+			Next
 			Exit
 		Case $hCombo
 			$sComboRead = GUICtrlRead($hCombo)
@@ -348,8 +445,8 @@ While 1
 		Case $Label12
 			ListViewUpdateWindows($cListView_WindowList)
 		Case $Label13
-			;_ArrayDisplay($LVItemArray)
-			_ArrayDisplay($aIndexList)
+			_ArrayDisplay($LVItemArray)
+			;_ArrayDisplay($aIndexList)
 		Case $Label14
 			;if no monitor is set, do nothing:
 			If String(GUICtrlRead($Label6b)) == String("") Then
@@ -380,6 +477,24 @@ While 1
 				;final x/y
 				$MonitorCoords[$i+1][3] = MonitoInfo()[$i+1][0] + 200
 				$MonitorCoords[$i+1][4] = MonitoInfo()[$i+1][1]
+			Next
+		Case $Label16
+			For $i = 0 To UBound($LVItemArray) - 1 
+				;check the right window assoc with the current app
+				$window = 0
+				For $j = 3 to UBound($LVItemArray,2) - 1 
+					If $LVItemArray[$i][$j] == 1 Then
+						$window = $LVItemArray[$i][$j]
+					EndIf
+				Next
+				MsgBox($MB_OK , "woot", $LVItemArray[$i][2] & "|" & IniRead("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") & "|" & $window)
+				;write if not found
+				If IniRead("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") == "ERR" Then
+					IniWrite("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
+				;update if not the same
+				ElseIf IniRead("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") <> $window Then
+					IniWrite("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
+				EndIf
 			Next
 	EndSwitch
 WEnd
@@ -454,19 +569,62 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 				Case $LVN_COLUMNCLICK ; A column was clicked
 					Local $tInfo = DllStructCreate($tagNMLISTVIEW, $ilParam)
 					Local $iCol = DllStructGetData($tInfo, "SubItem")
-					MsgBox($MB_OK,"look for title pos",$iCol)
-					#comments-start
-					for each item in the listview
-						if that item is checked yes on the column that was selected
-							if 
-								there is an empty space above, then swap positions 
-								also swap positions in the listview array
-								then delete the 1st position of the empty positions list
-							else
-								pass
-						else:
-							remember the pos of this "blank" space
-					#comments-end
+					;MsgBox($MB_OK,"look for title pos",$iCol)
+					
+					$BlankRowList = 0
+					Local $BlankRowList[UBound($LVItemArray, 1)]
+					For $BlankRowInit = 0 to UBound($BlankRowList, 1)-1
+						$BlankRowList[$BlankRowInit] = 0
+					Next
+					
+					;for each item in the listview
+					For $rowInt = 0 To UBound($LVItemArray, 1)-1
+						;if that item is checked yes on the column that was selected
+						;here i assume 1 for item image is checked. also assuming iCol and rowInt don't go out of bounds
+						If 1 ==_GUICtrlListView_GetItemImage( $cListView_WindowList, $rowInt, $iCol) Then
+							;if there is an empty space above, 
+							;IF IsNumber($BlankRowList[0]) Then
+							;search for a 1 in BlankRowList that is earlier than current $rowInt
+							$Test = _ArraySearch($BlankRowList, 1)
+							;If $BlankRowList[0] <> $rowInt  Then
+							If $Test < $rowInt And $Test <> -1 Then
+								;then swap positions (;also swap positions in the listview array)
+
+								;start index
+								$startmem = $LVItemArray[$Test][0]
+								;end index
+								$endmem = $LVItemArray[$rowInt][0]
+								;update the array 
+								_ArraySwap($LVItemArray, $Test, $rowInt, False)
+								;switch back the control IDs
+								$LVItemArray[$rowInt][0] = $endmem
+								$LVItemArray[$Test][0] = $startmem
+								
+								;then reset the 1 to a 0
+								$BlankRowList[$Test] = 0
+								;also when u switch the new spot is a blank now as well
+								$BlankRowList[$rowInt] = 1
+								;else
+									;pass
+							EndIf
+							Else
+								;set that value in BlankRowList to 1
+								$BlankRowList[$rowInt] = 1
+						EndIf
+					Next
+					;redraw listview at the end
+					;redraw the listview
+					For $i = 0 To UBound($LVItemArray,1) - 1
+						$blankstr = $LVItemArray[$i][1]
+						For $x = 2 To UBound($LVItemArray,2) - 3
+							$blankstr &= "|" & $LVItemArray[$i][$x]
+						Next
+						GUICtrlSetData($LVItemArray[$i][0], $blankstr)
+						;update checkboxes
+						For $imonitor = 0 To $Monitors[0][0]-1
+							_GUICtrlListView_SetItemImage( $cListView_WindowList, $i, $LVItemArray[$i][4 + $imonitor], 3 + $imonitor)
+						Next
+					Next
 					;ConsoleWrite("Column clicked: " & $iCol & @CRLF)
 				Case $LVN_BEGINDRAG
 					Global $initIndex = _GUICtrlListView_GetHotItem($hListView)

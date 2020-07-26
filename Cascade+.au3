@@ -207,6 +207,8 @@ GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
 GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
 Local $IndexCounter = 0
 
+;_ArrayDisplay($aArrayFinal)
+;_ArrayDisplay($LVItemArray)
 For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;MsgBox ( $MB_OK, "start of MY ROW", "")
 	
@@ -226,11 +228,9 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;add the checkboxes per monitor
 	For $imonitor = 0 To $Monitors[0][0]-1
 		If IniRead("CascadePrev.ini", "LastSession", $aArrayFinal[$rowInt][2], "ERR") == $imonitor+1 Then
-			;MsgBox($MB_OK , "woot", $aArrayFinal[$rowInt][2] & "|" & IniRead("CascadePrev.ini", "LastSession", $aArrayFinal[$rowInt][2], "ERR") & "|" & $imonitor)
 			_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 1, 3 + $imonitor) 
 			$LVItemArrayItem &= "|" & 1
 		Else
-			;MsgBox($MB_OK , "woot", $aArrayFinal[$rowInt][2] & "|" & IniRead("CascadePrev.ini", "LastSession", $aArrayFinal[$rowInt][2], "ERR") & "|" & $imonitor)
 			_GUICtrlListView_SetItemImage( $cListView_WindowList, $IndexCounter, 0, 3 + $imonitor) 
 			$LVItemArrayItem &= "|" & 0
 		EndIf
@@ -240,11 +240,92 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;_ArrayAdd($aIndexList, UBound($aIndexList, $1) - 1)
 	$IndexCounter += 1
 Next
+
+
+
+;copy array to arraycopy
+;rewrite in the right order from arraycopy to array
+
+;sort by window1
+;then amongst window1, sort by ini file pos
+;repeat per window
+;put all the blank windows at the end
+
 _ArrayDelete($aIndexList, 0)
 _ArrayDelete($LVItemArray, 0)
 
+;last pos so i can set the pos differently for each monitor
+$lastpos = 0
+;_ArrayDisplay($LVItemArray)
+For $imonitor = 0 To $Monitors[0][0]-1
+	;sort out per monitor
+	$BlankRowList = $lastpos
+	Local $BlankRowList[UBound($LVItemArray, 1)]
+	For $BlankRowInit = 0 to UBound($BlankRowList, 1)-1
+		$BlankRowList[$BlankRowInit] = 0
+	Next
+	For $lastIndexVar = $lastpos To UBound($LVItemArray,1) - 1
+		;remember the last empty spot in the array for this monitor
+		
+		;remember to manipulate both the LVItem array AND the actual listview
+		;update the array
+		;switch the control ID's
+		If 1 == $LVItemArray[$lastIndexVar][$imonitor+4] Then
+			;MsgBox($MB_OK ,"pick a monitor","hello")
+			;_ArrayDisplay($BlankRowList)
+			;search for a 1 in BlankRowList that is earlier than current $lastIndexVar
+			$Test = _ArraySearch($BlankRowList, 1)
+			If $Test < $lastIndexVar And $Test <> -1 Then
+				;then swap positions (;also swap positions in the listview array)
+				;start index
+				$startmem = $LVItemArray[$Test][0]
+				;end index
+				$endmem = $LVItemArray[$lastIndexVar][0]
+				;update the array 
+				_ArraySwap($LVItemArray, $Test, $lastIndexVar, False)
+				;switch back the control IDs
+				$LVItemArray[$lastIndexVar][0] = $endmem
+				$LVItemArray[$Test][0] = $startmem
+				;then reset the 1 to a 0
+				$BlankRowList[$Test] = 0
+				;also when u switch the new spot is a blank now as well
+				$BlankRowList[$lastIndexVar] = 1
+				;MsgBox($MB_OK ,"pick a monitor","set to 0" &"|"& $Test)
+				;attempt to set lastpos. if lastpos is larger than our current pos, skip
+				If $lastpos < $Test+1 Then
+				$lastpos = $Test+1
+				EndIf
+			EndIf
+		Else
+			;set that value in BlankRowList to 1
+			$BlankRowList[$lastIndexVar] = 1
+			;			
+			MsgBox($MB_OK ,"pick a monitor",$lastIndexVar & "|" & $BlankRowList[$lastIndexVar])
+			;			
+			_ArrayDisplay($BlankRowList)
+			;			
+			_ArrayDisplay($LVItemArray)
+		EndIf
+	Next
+	;when you are done sorting Per-monitor, then you sort each window section from beginningpos(?) to endpos(?)
+	
+Next
+_ArrayDisplay($LVItemArray)
+;redraw the listview to reflect LVItemArray update
+For $i = 0 To UBound($LVItemArray,1) - 1
+	$blankstr = $LVItemArray[$i][1]
+	For $x = 2 To UBound($LVItemArray,2) - 3
+		$blankstr &= "|" & $LVItemArray[$i][$x]
+	Next
+	GUICtrlSetData($LVItemArray[$i][0], $blankstr)
+	;update checkboxes
+	For $imonitor = 0 To $Monitors[0][0]-1
+		_GUICtrlListView_SetItemImage( $cListView_WindowList, $i, $LVItemArray[$i][4 + $imonitor], 3 + $imonitor)
+	Next
+Next
+
 ;redraw everything so checkboxes get removed
-_WinAPI_RedrawWindow($hListView)
+;_WinAPI_RedrawWindow($hListView)
 Global $time = -1
 
 GUISetState()
@@ -268,9 +349,9 @@ While 1
 			For $i = 0 To UBound($LVItemArray) - 1 
 				;check the right window assoc with the current app
 				$window = 0
-				For $j = 3 to UBound($LVItemArray,2) - 1 
+				For $j = 4 to UBound($LVItemArray,2) - 1 
 					If $LVItemArray[$i][$j] == 1 Then
-						$window = $LVItemArray[$i][$j]
+						$window = $j-3
 					EndIf
 				Next
 				;write if not found
@@ -383,8 +464,8 @@ While 1
 		Case $Label12
 			ListViewUpdateWindows($cListView_WindowList)
 		Case $Label13
-			;_ArrayDisplay($LVItemArray)
-			_ArrayDisplay($aIndexList)
+			_ArrayDisplay($LVItemArray)
+			;_ArrayDisplay($aIndexList)
 		Case $Label14
 			;if no monitor is set, do nothing:
 			If String(GUICtrlRead($Label6b)) == String("") Then
