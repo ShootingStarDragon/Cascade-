@@ -207,6 +207,8 @@ GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
 GUIRegisterMsg($WM_LBUTTONUP, "WM_LBUTTONUP")
 Local $IndexCounter = 0
 
+;_ArrayDisplay($aArrayFinal)
+;_ArrayDisplay($LVItemArray)
 For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	;MsgBox ( $MB_OK, "start of MY ROW", "")
 	
@@ -239,8 +241,6 @@ For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 	$IndexCounter += 1
 Next
 
-
-
 ;copy array to arraycopy
 ;rewrite in the right order from arraycopy to array
 
@@ -254,6 +254,8 @@ _ArrayDelete($LVItemArray, 0)
 
 ;last pos so i can set the pos differently for each monitor
 $lastpos = 0
+;this is the beginningpos for in-window sorting
+$beginningpos = 0
 ;_ArrayDisplay($LVItemArray)
 For $imonitor = 0 To $Monitors[0][0]-1
 	;sort out per monitor
@@ -290,8 +292,9 @@ For $imonitor = 0 To $Monitors[0][0]-1
 				$BlankRowList[$lastIndexVar] = 1
 				;MsgBox($MB_OK ,"pick a monitor","set to 0" &"|"& $Test)
 				;attempt to set lastpos. if lastpos is larger than our current pos, skip
-				If $lastpos < $lastIndexVar Then
-				$lastpos = $lastIndexVar
+				If $lastpos < $Test+1 Then
+					$lastpos = $Test+1
+					
 				EndIf
 			EndIf
 		Else
@@ -302,11 +305,55 @@ For $imonitor = 0 To $Monitors[0][0]-1
 			;_ArrayDisplay($LVItemArray)
 		EndIf
 	Next
-	;remember to set lastpos
+	;when you are done sorting Per-monitor, then you sort each window section from beginningpos(?) to endpos(?)
+	$endpos = _ArraySearch($BlankRowList, 1)
+	For $sortpos = $beginningpos+1 To $endpos-1
+		;position of current app in the ini file
+		$appPos = IniRead("CascadePrev.ini", "LastSessionPOS", $LVItemArray[$sortpos][2] & "POS", "DEFFAIL")
+		$appID = $LVItemArray[$sortpos][0]
+		;go back to the beginning to compare and sort
+		For $sortposb = $beginningpos To $sortpos
+			;MsgBox ( $MB_OK, "title", "indexpos current check VS checking against " &"|"& $sortpos &"|"& $sortposb)
+			;MsgBox ( $MB_OK, "title", "current and previous compares " &"|"& $LVItemArray[$sortpos][2] &"|"& $LVItemArray[$sortposb][2])
+			$prevappPos = IniRead("CascadePrev.ini", "LastSessionPOS", $LVItemArray[$sortposb][2] & "POS", "DEFFAIL")
+			$prevappID = $LVItemArray[$sortposb][0]
+			;MsgBox ( $MB_OK, "title", "comarpingb " &"|"& $appPos &"|"& $prevappPos )
+			;MsgBox ( $MB_OK, "title",  Int($appPos) < Int($prevappPos))
+			;comparing 1 to 1 is whatevs
+			;insert at the first time when the current pos is less than the pos i am checking
+			;if current pos in ini is smaller than prevpos, switch
+			If Int($appPos) < Int($prevappPos) Then
+				;MsgBox ( $MB_OK, "title", "SWAP")
+				;_ArrayDisplay($LVItemArray)
+				;remember to swap the control ID's then u swap to preserve order...
+				$LVItemArray[$sortpos][0]  = $prevappID
+				$LVItemArray[$sortposb][0] = $appID
+				_ArraySwap($LVItemArray, $sortpos, $sortposb)
+				;_ArrayDisplay($LVItemArray)
+				;since we swap, set checking against (sortposb) to the end to force end
+				$sortposb = $sortpos
+			EndIf
+		Next
+	Next
+	;also set beginningpos to lastpos when you are done sorting
+	$beginningpos = $lastpos
+Next
+;_ArrayDisplay($LVItemArray)
+;redraw the listview to reflect LVItemArray update
+For $i = 0 To UBound($LVItemArray,1) - 1
+	$blankstr = $LVItemArray[$i][1]
+	For $x = 2 To UBound($LVItemArray,2) - 3
+		$blankstr &= "|" & $LVItemArray[$i][$x]
+	Next
+	GUICtrlSetData($LVItemArray[$i][0], $blankstr)
+	;update checkboxes
+	For $imonitor = 0 To $Monitors[0][0]-1
+		_GUICtrlListView_SetItemImage( $cListView_WindowList, $i, $LVItemArray[$i][4 + $imonitor], 3 + $imonitor)
+	Next
 Next
 
 ;redraw everything so checkboxes get removed
-_WinAPI_RedrawWindow($hListView)
+;_WinAPI_RedrawWindow($hListView)
 Global $time = -1
 
 GUISetState()
@@ -342,6 +389,8 @@ While 1
 				ElseIf IniRead ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], "ERR") <> $window Then
 					IniWrite ( "CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
 				EndIf
+				;write the current pos of the window
+				IniWrite ( "CascadePrev.ini", "LastSessionPOS", $LVItemArray[$i][2] & "POS", $LVItemArray[$i][0])
 			Next
 			Exit
 		Case $hCombo
@@ -569,63 +618,85 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 				Case $LVN_COLUMNCLICK ; A column was clicked
 					Local $tInfo = DllStructCreate($tagNMLISTVIEW, $ilParam)
 					Local $iCol = DllStructGetData($tInfo, "SubItem")
-					;MsgBox($MB_OK,"look for title pos",$iCol)
-					
-					$BlankRowList = 0
-					Local $BlankRowList[UBound($LVItemArray, 1)]
-					For $BlankRowInit = 0 to UBound($BlankRowList, 1)-1
-						$BlankRowList[$BlankRowInit] = 0
-					Next
-					
-					;for each item in the listview
-					For $rowInt = 0 To UBound($LVItemArray, 1)-1
-						;if that item is checked yes on the column that was selected
-						;here i assume 1 for item image is checked. also assuming iCol and rowInt don't go out of bounds
-						If 1 ==_GUICtrlListView_GetItemImage( $cListView_WindowList, $rowInt, $iCol) Then
-							;if there is an empty space above, 
-							;IF IsNumber($BlankRowList[0]) Then
-							;search for a 1 in BlankRowList that is earlier than current $rowInt
-							$Test = _ArraySearch($BlankRowList, 1)
-							;If $BlankRowList[0] <> $rowInt  Then
-							If $Test < $rowInt And $Test <> -1 Then
-								;then swap positions (;also swap positions in the listview array)
+					Switch $iCol
+						;make sure we are actually clicking on a monitor column
+						Case $iCol > 2
+							;MsgBox($MB_OK,"look for title pos",$iCol)
+							
+							$BlankRowList = 0
+							Local $BlankRowList[UBound($LVItemArray, 1)]
+							For $BlankRowInit = 0 to UBound($BlankRowList, 1)-1
+								$BlankRowList[$BlankRowInit] = 0
+							Next
+							
+							;idea: do the selected column first, then sort out the rest of the columns in order as well. AKA
+							;for columns 0 1 2 3
+							; I click col 2
+							;then I do 
+							;2 0 1 3 in order
+							
+							$ColSeq = 0
+							Local $ColSeq[$Monitors[0][0]]
+							For $ColSeqInit = 1 to UBound($ColSeq, 1)-1
+								$ColSeq[0] = $iCol-2
+								Switch $ColSeqInit
+									Case $ColSeqInit <= $iCol 
+										$ColSeq[$ColSeqInit] = $ColSeqInit-1
+									Case $ColSeqInit > $iCol 
+										$ColSeq[$ColSeqInit] = $ColSeqInit
+								EndSwitch
+							Next
+							
+							;for each item in the listview
+							For $rowInt = 0 To UBound($LVItemArray, 1)-1
+								;if that item is checked yes on the column that was selected
+								;here i assume 1 for item image is checked. also assuming iCol and rowInt don't go out of bounds
+								If 1 ==_GUICtrlListView_GetItemImage( $cListView_WindowList, $rowInt, $iCol) Then
+									;if there is an empty space above, 
+									;IF IsNumber($BlankRowList[0]) Then
+									;search for a 1 in BlankRowList that is earlier than current $rowInt
+									$Test = _ArraySearch($BlankRowList, 1)
+									;If $BlankRowList[0] <> $rowInt  Then
+									If $Test < $rowInt And $Test <> -1 Then
+										;then swap positions (;also swap positions in the listview array)
 
-								;start index
-								$startmem = $LVItemArray[$Test][0]
-								;end index
-								$endmem = $LVItemArray[$rowInt][0]
-								;update the array 
-								_ArraySwap($LVItemArray, $Test, $rowInt, False)
-								;switch back the control IDs
-								$LVItemArray[$rowInt][0] = $endmem
-								$LVItemArray[$Test][0] = $startmem
-								
-								;then reset the 1 to a 0
-								$BlankRowList[$Test] = 0
-								;also when u switch the new spot is a blank now as well
-								$BlankRowList[$rowInt] = 1
-								;else
-									;pass
-							EndIf
-							Else
-								;set that value in BlankRowList to 1
-								$BlankRowList[$rowInt] = 1
-						EndIf
-					Next
-					;redraw listview at the end
-					;redraw the listview
-					For $i = 0 To UBound($LVItemArray,1) - 1
-						$blankstr = $LVItemArray[$i][1]
-						For $x = 2 To UBound($LVItemArray,2) - 3
-							$blankstr &= "|" & $LVItemArray[$i][$x]
-						Next
-						GUICtrlSetData($LVItemArray[$i][0], $blankstr)
-						;update checkboxes
-						For $imonitor = 0 To $Monitors[0][0]-1
-							_GUICtrlListView_SetItemImage( $cListView_WindowList, $i, $LVItemArray[$i][4 + $imonitor], 3 + $imonitor)
-						Next
-					Next
-					;ConsoleWrite("Column clicked: " & $iCol & @CRLF)
+										;start index
+										$startmem = $LVItemArray[$Test][0]
+										;end index
+										$endmem = $LVItemArray[$rowInt][0]
+										;update the array 
+										_ArraySwap($LVItemArray, $Test, $rowInt, False)
+										;switch back the control IDs
+										$LVItemArray[$rowInt][0] = $endmem
+										$LVItemArray[$Test][0] = $startmem
+										
+										;then reset the 1 to a 0
+										$BlankRowList[$Test] = 0
+										;also when u switch the new spot is a blank now as well
+										$BlankRowList[$rowInt] = 1
+										;else
+											;pass
+									EndIf
+									Else
+										;set that value in BlankRowList to 1
+										$BlankRowList[$rowInt] = 1
+								EndIf
+							Next
+							;redraw listview at the end
+							;redraw the listview
+							For $i = 0 To UBound($LVItemArray,1) - 1
+								$blankstr = $LVItemArray[$i][1]
+								For $x = 2 To UBound($LVItemArray,2) - 3
+									$blankstr &= "|" & $LVItemArray[$i][$x]
+								Next
+								GUICtrlSetData($LVItemArray[$i][0], $blankstr)
+								;update checkboxes
+								For $imonitor = 0 To $Monitors[0][0]-1
+									_GUICtrlListView_SetItemImage( $cListView_WindowList, $i, $LVItemArray[$i][4 + $imonitor], 3 + $imonitor)
+								Next
+							Next
+							;ConsoleWrite("Column clicked: " & $iCol & @CRLF)
+					EndSwitch
 				Case $LVN_BEGINDRAG
 					Global $initIndex = _GUICtrlListView_GetHotItem($hListView)
 					;MsgBox($MB_OK, "is this an index or what??", "not declared")
