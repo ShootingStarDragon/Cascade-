@@ -643,9 +643,9 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 								$ColSeq[0] = $iCol-2
 							Next
 							
-							;For $x = 0 to UBound($ColSeq, 1)-1
-							;	MsgBox ( $MB_OK, "colseq", $x &"|"& $ColSeq[$x] )
-							;Next
+							For $x = 0 to UBound($ColSeq, 1)-1
+								MsgBox ( $MB_OK, "colseq", $x &"|"& $ColSeq[$x] )
+							Next
 							$lastpos = 0
 							
 							For $iMonitor = 0 To $Monitors[0][0]-1
@@ -655,8 +655,11 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 									$BlankRowList[$BlankRowInit] = 0
 								Next
 								For $lastIndexVar = $lastpos to UBound($LVItemArray,1) - 1
-									;MsgBox ( $MB_OK, "title", $lastIndexVar &"|"&  $iCol &"|"& $ColSeq[$iMonitor]+2 &"|"& _GUICtrlListView_GetItemImage( $cListView_WindowList, $lastIndexVar, $ColSeq[$iMonitor]+2))
-									IF 1 ==_GUICtrlListView_GetItemImage( $cListView_WindowList, $lastIndexVar, $ColSeq[$iMonitor]+2) Then
+									;MsgBox ( $MB_OK, "walkthrough", $lastIndexVar &"|"&  $iCol &"|"& $ColSeq[$iMonitor]+2 &"|"& _GUICtrlListView_GetItemImage( $cListView_WindowList, $lastIndexVar, $ColSeq[$iMonitor]+2) &"|"& $Test)
+									;MsgBox ( $MB_OK, "arraycounts", $lastIndexVar &"|"&  $ColSeq[$iMonitor]+3 &"|"& $LVItemArray[$lastIndexVar][$ColSeq[$iMonitor]+3])
+									;MsgBox ( $MB_OK, "arraycountsb", 1 == $LVItemArray[$lastIndexVar][$ColSeq[$iMonitor]+3])
+									;If 1 ==_GUICtrlListView_GetItemImage( $cListView_WindowList, $lastIndexVar, $ColSeq[$iMonitor]+2) Then
+									If 1 == $LVItemArray[$lastIndexVar][$ColSeq[$iMonitor]+3] Then
 										$Test = _ArraySearch($BlankRowList, 1)
 										If $Test < $lastIndexVar And $Test <> -1 Then
 											;MsgBox ( $MB_OK, "swap", $lastIndexVar &"|"& $Test &"|"& $LVItemArray[$lastIndexVar][1] &"|"& $LVItemArray[$Test][1])
@@ -678,6 +681,9 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 											If $lastpos < $Test+1 Then
 												$lastpos = $Test+1
 											EndIf
+										ElseIf $Test <> -1 Then
+											;basically clear this to stop me from swapping to checked line items in the 2nd, 3rd passes of monitor
+											$BlankRowList[$Test] = 0
 										EndIf
 									Else
 										$BlankRowList[$lastIndexVar] = 1
