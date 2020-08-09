@@ -623,7 +623,6 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 						Case $iCol > 2
 							;MsgBox($MB_OK,"look for title pos",$iCol)
 							
-							
 							;idea: do the selected column first, then sort out the rest of the columns in order as well. AKA
 							;for columns 1 2 3 4
 							; I click col 2
@@ -643,9 +642,9 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 								$ColSeq[0] = $iCol-2
 							Next
 							
-							For $x = 0 to UBound($ColSeq, 1)-1
-								MsgBox ( $MB_OK, "colseq", $x &"|"& $ColSeq[$x] )
-							Next
+							;For $x = 0 to UBound($ColSeq, 1)-1
+							;	MsgBox ( $MB_OK, "colseq", $x &"|"& $ColSeq[$x] )
+							;Next
 							$lastpos = 0
 							
 							For $iMonitor = 0 To $Monitors[0][0]-1
@@ -655,14 +654,13 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 									$BlankRowList[$BlankRowInit] = 0
 								Next
 								For $lastIndexVar = $lastpos to UBound($LVItemArray,1) - 1
-									;MsgBox ( $MB_OK, "walkthrough", $lastIndexVar &"|"&  $iCol &"|"& $ColSeq[$iMonitor]+2 &"|"& _GUICtrlListView_GetItemImage( $cListView_WindowList, $lastIndexVar, $ColSeq[$iMonitor]+2) &"|"& $Test)
-									;MsgBox ( $MB_OK, "arraycounts", $lastIndexVar &"|"&  $ColSeq[$iMonitor]+3 &"|"& $LVItemArray[$lastIndexVar][$ColSeq[$iMonitor]+3])
+									;;MsgBox ( $MB_OK, "arraycounts", $lastIndexVar &"|"&  $ColSeq[$iMonitor]+3 &"|"& $LVItemArray[$lastIndexVar][$ColSeq[$iMonitor]+3])
 									;MsgBox ( $MB_OK, "arraycountsb", 1 == $LVItemArray[$lastIndexVar][$ColSeq[$iMonitor]+3])
 									;If 1 ==_GUICtrlListView_GetItemImage( $cListView_WindowList, $lastIndexVar, $ColSeq[$iMonitor]+2) Then
 									If 1 == $LVItemArray[$lastIndexVar][$ColSeq[$iMonitor]+3] Then
 										$Test = _ArraySearch($BlankRowList, 1)
 										If $Test < $lastIndexVar And $Test <> -1 Then
-											;MsgBox ( $MB_OK, "swap", $lastIndexVar &"|"& $Test &"|"& $LVItemArray[$lastIndexVar][1] &"|"& $LVItemArray[$Test][1])
+											;;MsgBox ( $MB_OK, "swap", $lastIndexVar &"|"& $Test &"|"& $LVItemArray[$lastIndexVar][1] &"|"& $LVItemArray[$Test][1])
 											;start index
 											$startmem = $LVItemArray[$Test][0]
 											;end index
@@ -676,7 +674,7 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 											$BlankRowList[$Test] = 0
 											;also when u switch the new spot is a blank now as well
 											$BlankRowList[$lastIndexVar] = 1
-											;MsgBox($MB_OK ,"pick a monitor","set to 0" &"|"& $Test)
+											;;MsgBox($MB_OK ,"pick a monitor","set to 0" &"|"& $Test)
 											;attempt to set lastpos. if lastpos is larger than our current pos, skip
 											If $lastpos < $Test+1 Then
 												$lastpos = $Test+1
