@@ -1006,6 +1006,7 @@ Func ListViewUpdateWindows($LVctrl)
 		EndIf
 	Next
 
+	;#comments-start
 	For $rowInt = 0 To UBound($aArrayFinal, 1)-1
 		;MsgBox($MB_OK, "searching for|what does arraysearch say",$aArrayFinal[$rowInt][2] & "|" & $aArrayFinal[$rowInt][1] & "|" & _ArraySearch($LVItemArray, $aArrayFinal[$rowInt][1], 0, 0, 0, 0, 1, 3, False))
 		;search for hwnd
@@ -1040,15 +1041,28 @@ Func ListViewUpdateWindows($LVctrl)
 			_ArrayAdd ( $aIndexList, $IndexCounter)
 		EndIf
 	Next
-	
+	;#comments-end
 	_ArrayDisplay($aArrayFinal)
 	_ArrayDisplay($LVItemArray)
+	
+	;redraw the listview
+	For $i = 0 To UBound($LVItemArray,1) - 1
+		$blankstr = $LVItemArray[$i][1]
+		For $x = 2 To UBound($LVItemArray,2) - 3
+			$blankstr &= "|" & $LVItemArray[$i][$x]
+		Next
+		GUICtrlSetData($LVItemArray[$i][0], $blankstr)
+		;update checkboxes
+		For $imonitorx = 0 To $Monitors[0][0]-1
+			_GUICtrlListView_SetItemImage( $cListView_WindowList, $i, $LVItemArray[$i][4 + $imonitorx], 3 + $imonitorx)
+		Next
+	Next
 	
 	;_ArrayDisplay($LVItemArray)
 	;THIS IS FOR INDEXLIST TO CLEAR 1ST CHECKBOX
 	_ArrayDelete ( $aIndexList, 0 )
 	;;MsgBox($MB_OK, "is this an index or what??", $initIndex)
-	_WinAPI_RedrawWindow($hGUI)
+	;;_WinAPI_RedrawWindow($hGUI)
 EndFunc
 
 Func ListViewUpdateWindows_DEPRECATED($LVctrl)
