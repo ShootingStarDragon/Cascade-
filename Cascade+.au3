@@ -945,6 +945,16 @@ Func MonitoInfo()
     ;MsgBox(0,"Screen Info",$msg)
     return $MonitorPos
 EndFunc
+Func ListViewUpdateWindowsREDOIFBUGGED($LVctrl)
+
+	;idea: get a new list of windows from scratch = newwindowarray
+	;make sure to update lvItemArray properly 
+		;if x in newwindow and not in lvitem, add to the end
+		;if x in lvitem but not in newwindow, delete entry
+	;then update the listview
+	
+
+EndFunc
 
 Func ListViewUpdateWindows($LVctrl)
 	;$LVctrl is the control of the List View
@@ -1006,6 +1016,20 @@ Func ListViewUpdateWindows($LVctrl)
 	_ArrayDisplay($aArrayFinal)
 	_ArrayDisplay($LVItemArray)
 	
+	;if x in lvitem but not in aArrayFinal, delete entry
+	$delOffset = 0
+	For $rowInt = 0 To UBound($LVItemArray,1)-1
+		$searchtest = _ArraySearch($aArrayFinal, $LVItemArray[$rowInt-$delOffset][3], 0, 0, 0, 0, 1, 1, False)
+		MsgBox($MB_OK, "searchtest", $LVItemArray[$rowInt-$delOffset][2] &"|"& $searchtest)
+		;MsgBox($MB_OK, "test arraysearch", $LVItemArray[$rowInt-$delOffset][3] &"|"& $aArrayFinal[$searchtest][1] &"|"& $searchtest)
+		;MsgBox($MB_OK, "test arraysearchb", )
+		If $searchtest == -1 Then
+			GUICtrlDelete($LVItemArray[$rowInt-$delOffset][0])
+			_ArrayDelete($LVItemArray, $rowInt-$delOffset)
+			$delOffset += 1
+		EndIf
+	Next
+	
 	$delOffset = 0
 	For $rowInt = 0 To UBound($LVItemArray,1)-1
 		;GUICtrlRead ( controlID [, advanced = 0] )
@@ -1022,6 +1046,10 @@ Func ListViewUpdateWindows($LVctrl)
 			$delOffset += 1
 		EndIf
 	Next
+	
+	
+	
+	
 
 	;#comments-start
 	For $rowInt = 0 To UBound($aArrayFinal, 1)-1
