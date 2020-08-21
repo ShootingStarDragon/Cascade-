@@ -493,9 +493,7 @@ While 1
 			Next
 		Case $Label12
 			ListViewUpdateWindows($cListView_WindowList)
-		Case $Label13
-			_ArrayDisplay($LVItemArray)
-			;_ArrayDisplay($aIndexList)
+
 		Case $Label14
 			;if no monitor is set, do nothing:
 			If String(GUICtrlRead($Label6b)) == String("") Then
@@ -527,6 +525,10 @@ While 1
 				$MonitorCoords[$i+1][3] = MonitoInfo()[$i+1][0] + 200
 				$MonitorCoords[$i+1][4] = MonitoInfo()[$i+1][1]
 			Next
+		#comments-start
+		Case $Label13
+			_ArrayDisplay($LVItemArray)
+			;_ArrayDisplay($aIndexList)
 		Case $Label16
 			For $i = 0 To UBound($LVItemArray) - 1 
 				;check the right window assoc with the current app
@@ -545,6 +547,7 @@ While 1
 					IniWrite("CascadePrev.ini", "LastSession", $LVItemArray[$i][2], $window )
 				EndIf
 			Next
+		#comments-end
 	EndSwitch
 WEnd
 
