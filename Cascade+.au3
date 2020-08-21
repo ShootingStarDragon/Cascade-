@@ -171,10 +171,10 @@ $Label10 = GUICtrlCreateLabel("End Point Y", 10, 180)
 $Label10b = GUICtrlCreateInput("", 100, 180, 100, 20)
 $Label11 = GUICtrlCreateButton("Cascade Now!", 10, 430, 100, 20)
 $Label12 = GUICtrlCreateButton("Refresh Window List", 120, 430, 120, 20)
-$Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20);used to check arraystates when debugging
+;$Label13 = GUICtrlCreateButton("CHECK ARRAY", 120, 450, 120, 20);used to check arraystates when debugging
 $Label14 = GUICtrlCreateButton("Update Coordinates", 220, 120, 120, 20)
 $Label15 = GUICtrlCreateButton("Reset Coordinates", 220, 140, 120, 20)
-$Label16 = GUICtrlCreateButton("Check ini", 340, 140, 120, 20)
+;$Label16 = GUICtrlCreateButton("Check ini", 340, 140, 120, 20)
 
 ;OnLoad: make sure init file exists. if not, create it
 
