@@ -642,9 +642,9 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 								$ColSeq[0] = $iCol-2
 							Next
 							
-							;For $x = 0 to UBound($ColSeq, 1)-1
-							;	MsgBox ( $MB_OK, "colseq", $x &"|"& $ColSeq[$x] )
-							;Next
+							For $x = 0 to UBound($ColSeq, 1)-1
+								MsgBox ( $MB_OK, "colseq", $x &"|"& $ColSeq[$x] )
+							Next
 							$lastpos = 0
 							
 							For $iMonitor = 0 To $Monitors[0][0]-1
