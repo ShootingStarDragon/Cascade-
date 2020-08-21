@@ -642,9 +642,9 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 								$ColSeq[0] = $iCol-2
 							Next
 							
-							For $x = 0 to UBound($ColSeq, 1)-1
-								MsgBox ( $MB_OK, "colseq", $x &"|"& $ColSeq[$x] )
-							Next
+							;For $x = 0 to UBound($ColSeq, 1)-1
+							;	MsgBox ( $MB_OK, "colseq", $x &"|"& $ColSeq[$x] )
+							;Next
 							$lastpos = 0
 							
 							For $iMonitor = 0 To $Monitors[0][0]-1
@@ -656,11 +656,13 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 								For $lastIndexVar = $lastpos to UBound($LVItemArray,1) - 1
 									;;MsgBox ( $MB_OK, "arraycounts", $lastIndexVar &"|"&  $ColSeq[$iMonitor]+3 &"|"& $LVItemArray[$lastIndexVar][$ColSeq[$iMonitor]+3])
 									;MsgBox ( $MB_OK, "arraycountsb", 1 == $LVItemArray[$lastIndexVar][$ColSeq[$iMonitor]+3])
+									;MsgBox ( $MB_OK, "lastpos is", $lastpos)
 									;If 1 ==_GUICtrlListView_GetItemImage( $cListView_WindowList, $lastIndexVar, $ColSeq[$iMonitor]+2) Then
 									If 1 == $LVItemArray[$lastIndexVar][$ColSeq[$iMonitor]+3] Then
 										$Test = _ArraySearch($BlankRowList, 1)
 										If $Test < $lastIndexVar And $Test <> -1 Then
-											;;MsgBox ( $MB_OK, "swap", $lastIndexVar &"|"& $Test &"|"& $LVItemArray[$lastIndexVar][1] &"|"& $LVItemArray[$Test][1])
+											;MsgBox ( $MB_OK, "lastpos is", $lastpos)
+											;MsgBox ( $MB_OK, "swap", $lastIndexVar &"|"& $Test &"|"& $LVItemArray[$lastIndexVar][1] &"|"& $LVItemArray[$Test][1])
 											;start index
 											$startmem = $LVItemArray[$Test][0]
 											;end index
@@ -686,6 +688,21 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 									Else
 										$BlankRowList[$lastIndexVar] = 1
 									EndIf
+									;now i have to account for when everything is ordered and you do not move anything, so $lastpos never gets set.
+									IF $lastIndexVar == UBound($LVItemArray,1) - 1 and $lastpos == 0 Then
+										;reverse search for the end of that 'column'
+										;MsgBox ( $MB_OK, "does next block even run?", )
+										For $elemtest = UBound($LVItemArray,1) - 1 to 0 Step -1
+											;check if is 1 on that monitor on row elemtest
+											;return the first val we find
+											;MsgBox ( $MB_OK, "does the check fail?", $elemtest,$ColSeq[$iMonitor]+3,$LVItemArray[$elemtest][$ColSeq[$iMonitor]+3])
+											If 1 == $LVItemArray[$elemtest][$ColSeq[$iMonitor]+3] Then
+												$lastpos = $elemtest+1
+												ExitLoop 
+											EndIf
+										Next
+									EndIf
+									
 								Next
 							Next
 							;redraw the listview
