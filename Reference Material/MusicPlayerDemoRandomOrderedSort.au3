@@ -21,7 +21,28 @@ find all playlists with this song (so xspf compatible)
 
 -=-=-=-
 plan:
-make window
+add the ez buttons:
+	play
+	stop
+	volUp
+	voldown
+	hard buttons:
+		prev
+		next
+		+1
+		-1
+blacklist filter
+random walk with weights:
+plan:
+	50% new songs
+	50% old songs
+	idea is u have 50% chance to take the max level of likeness (ex: 10)
+		then from all the songs that are rated 10, u pick a random song
+			if you play a new song too much, you skip (and skipping is a -1)
+		if no songs, then go to 9
+		
+
+
 (skip) have dropdown for xspf playlists
 	buttons:
 		play
@@ -51,8 +72,8 @@ $Label1 = GUICtrlCreateButton("Play", 0, 2, 81, 41)
 $Label2 = GUICtrlCreateButton("Prev", 0, 43, 81, 41)
 $Label3 = GUICtrlCreateButton("Next", 81, 43, 81, 41)
 $Label4 = GUICtrlCreateButton("Stop", 81, 2, 81, 41)
-$Label5 = GUICtrlCreateButton("VolDown", 0, 84, 81, 41)
-$Label6 = GUICtrlCreateButton("volUp", 81, 84, 81, 41)
+$Label5 = GUICtrlCreateButton("VolUp", 0, 84, 81, 41)
+$Label6 = GUICtrlCreateButton("volDown", 81, 84, 81, 41)
 $Label7 = GUICtrlCreateButton("FolderSource", 0, 125, 81, 41)
 $Label8 = GUICtrlCreateButton("Refresh List", 81, 125, 81, 41)
 $Label9 = GUICtrlCreateLabel("", 0, 207, 400, 30)
@@ -74,7 +95,7 @@ If FileExists("MusicList.txt") Then
 	$MusicCount = _FileCountLines("MusicList.txt")
 	Global $MusicArray[$MusicCount][3]
 	
-	For $x = 0 to UBound($MusicCount ,1)
+	For $x = 0 to UBound($MusicCount ,1) -1
 		;read line
 		$NextLine = FileRead ("MusicList.txt")
 		$SongName = StringSplit($NextLine, "|")[1]
@@ -105,8 +126,25 @@ While 1
 			do
 			Sleep (500)
 			Until IsInt ( $FileList[0] )
-			$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
-			IniWrite ( $MusicFILE, "FolderSource", "Folder1", $FileSource )
+			$MusicFILE = FileOpen ("MusicList.txt", 1 + 256)
+			$MusicFILEREAD = FileRead ("MusicList.txt", 1 + 256)
+			$MusicFOLDERS = FileOpen ("MusicFolders.txt", 1 + 256)
+			FileWrite ( $MusicFOLDERS, $FileSource & @CRLF )
+			
+			For $x=1 to UBound( $FileList ,1) -1
+				;i don't want to override old data....
+				;if it DOES NOT exist: write
+				;reread to update
+				$MusicFILEREAD = FileRead ("MusicList.txt", 1 + 256)
+				If FileSearch ($MusicFILEREAD, $FileList[$x]) == False Then
+					GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
+					FileWrite ( $MusicFILE, $FileList[$x] & @CRLF )
+					GUICtrlCreateListViewItem ($FileList[$x] & "|" & "|", $MusicListView )
+				EndIf
+				
+				
+			Next
+			#comments-start
 			For $x=1 to UBound( $FileList ,1) -1
 				;i don't want to override old data....
 				;if it DOES NOT exist: write
@@ -117,6 +155,22 @@ While 1
 					GUICtrlCreateListViewItem ($FileList[$x] & "|" & "|", $MusicListView )
 				EndIf
 			Next
+			#comments-end
 			FileClose ($MusicFILE)
+			FileClose ($MusicFOLDERS)
 	EndSwitch
 WEnd
+
+Func FileSearch ($FileReadObj, $string)
+	If @error = -1 Then
+		MsgBox(0, "Error", "File not read")
+		Exit
+	Else
+		;MsgBox(0, "Read", $read)
+		If StringRegExp($FileReadObj, $string) Then
+			Return True
+		Else
+			Return False
+		EndIf
+	EndIf
+EndFunc
