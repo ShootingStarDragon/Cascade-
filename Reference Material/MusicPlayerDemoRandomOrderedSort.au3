@@ -21,37 +21,39 @@ find all playlists with this song (so xspf compatible)
 
 -=-=-=-
 plan:
+-> plan out random walk (default is this autoplay)
+random walk with weights:
+plan:
+	set timer for the song length +1 second
+	if song is NOT playing: pick new song and add to history (use _SoundStatus function instead of soundplay)
+	50% new songs
+	50% old songs
+	idea is u have 50% chance to take the max level of likeness (ex: 10) <--- hook onto +1 func?
+		then from all the songs that are rated 10 in this example, u pick a random song
+			if you play a new song too much, you skip (and skipping is a -1)
+		if no songs, then go to 9
+
+-> prev and next buttons
+	prev and next can mess around with this ordering
+-> autoplay
+-> refresh music list to add newer songs
+->blacklist filter
+-=-=-
+-> COMPATIBILITY WITH XSPF
+-> search through playlists for song (have like a dropdown menu for playlist?)
+-> add song to playlist....
+
+
+
 add the ez buttons:
-	play
-	stop
-	volUp
-	voldown
 	hard buttons:
 		prev
 		next
-		+1
-		-1
-blacklist filter
-random walk with weights:
-plan:
-	50% new songs
-	50% old songs
-	idea is u have 50% chance to take the max level of likeness (ex: 10)
-		then from all the songs that are rated 10, u pick a random song
-			if you play a new song too much, you skip (and skipping is a -1)
-		if no songs, then go to 9
+
 		
 
 
-(skip) have dropdown for xspf playlists
-	buttons:
-		play
-		prev
-		next
-		stop
-		voldown
-		volup
-		(skip)foldersource
+
 	
 get music from folder
 	(skip) have ability to search through multiple folders
@@ -66,57 +68,106 @@ i have to reload the entire array if i want to update ini file... (probably do a
 
 $hGUI = GUICreate("MPDROS",600,500,-1,-1,$WS_SIZEBOX)
 
-#comments-start
-#comments-end
 $Label1 = GUICtrlCreateButton("Play", 0, 2, 81, 41)
 $Label2 = GUICtrlCreateButton("Prev", 0, 43, 81, 41)
 $Label3 = GUICtrlCreateButton("Next", 81, 43, 81, 41)
 $Label4 = GUICtrlCreateButton("Stop", 81, 2, 81, 41)
-$Label5 = GUICtrlCreateButton("VolUp", 0, 84, 81, 41)
-$Label6 = GUICtrlCreateButton("volDown", 81, 84, 81, 41)
+$Label5 = GUICtrlCreateButton("VolUp,5", 0, 84, 81, 41)
+$Label6 = GUICtrlCreateButton("volDown,5", 81, 84, 81, 41)
 $Label7 = GUICtrlCreateButton("FolderSource", 0, 125, 81, 41)
 $Label8 = GUICtrlCreateButton("Refresh List", 81, 125, 81, 41)
 $Label9 = GUICtrlCreateLabel("", 0, 207, 400, 30)
 ;$Label10 = GUICtrlCreateLabel("??????????????????????????????????????????????????????????????????", 162, 0, 400, 30)
 ;max char length: ??????????????????????????????????????????????????????????????????
-;$Label11 = GUICtrlCreateButton("like (+1)", 162, 43, 81, 41)
-;$Label12 = GUICtrlCreateButton("dislike (-1)", 243, 43, 81, 41)
 $Label11 = GUICtrlCreateButton("like (+1)", 0, 166, 81, 41)
 $Label12 = GUICtrlCreateButton("dislike (-1)", 81, 166, 81, 41)
 
-Global $MusicListView = GUICtrlCreateListView ("Title|col2|col3", 183, 2, 400,200 )
+Global $MusicListView = GUICtrlCreateListView ("Title|Like Value|Row #", 183, 2, 400,200 )
 _GUICtrlListView_SetExtendedListViewStyle($MusicListView, BitOR($LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT));$LVS_EX_GRIDLINES
 
 
 If FileExists("MusicList.txt") Then
-	$MusicFILE = FileRead ("MusicList.txt")
+	$MusicFILE = FileOpen ("MusicList.txt")
 	
 	;make music array:
 	$MusicCount = _FileCountLines("MusicList.txt")
 	Global $MusicArray[$MusicCount][3]
 	
-	For $x = 0 to UBound($MusicCount ,1) -1
+	;$MusicCount
+	For $x = 0 to 5 -1
 		;read line
-		$NextLine = FileRead ("MusicList.txt")
+		$NextLine = FileReadLine ($MusicFILE)
 		$SongName = StringSplit($NextLine, "|")[1]
-		
+		$SongLikes = StringSplit($NextLine, "|")[2]
+
 		;add to array
 		$MusicArray[$x][0] = $SongName
 		;add to listview:
-		GUICtrlCreateListViewItem ($SongName & "|" & "|", $MusicListView)
+		GUICtrlCreateListViewItem ($SongName & "|" & $SongLikes & "|" & $x+1, $MusicListView)
 		;set data
-		GUICtrlSetData ( $Label9, ($x/$MusicTotal)*100  & '%' & " done" & ", " & "Working on " & $SongName)
+		GUICtrlSetData ( $Label9, ($x/$MusicCount)*100  & '%' & " done" & ", " & "Working on " & $SongName)
 	Next
 Else
 	$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
 	FileClose ($MusicFILE)
 EndIf
 GUISetState()
+;set false ID
+Global $CurrentMusicCtrlID = -1
 While 1
-	$nMsg = GUIGetMsg()
 	Switch GUIGetMsg()
 		Case $GUI_EVENT_CLOSE
 			Exit
+		Case $Label1
+			;if something is selected from listview, play:
+			;else say nothing selected
+			If 3+2 = 5 Then
+				$CurrentSong = StringSplit(GUICtrlRead(GUICtrlRead ( $MusicListView)), "|")[1]
+				SoundPlay ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & $CurrentSong)
+				GUICtrlSetData ( $Label9, "Playing " & $CurrentSong)
+				;set the ctrl ID because I need to know for +1 -1
+				Global $CurrentMusicCtrlID = GUICtrlRead ( $MusicListView)
+			Else
+				GUICtrlSetData ( $Label9, "No song selected!")
+			EndIf
+		Case $Label4
+			SoundPlay("nosound", 0)
+		Case $Label5
+			$number = StringSplit( GUICtrlRead ($Label5), ",") [2] + 5
+			SoundSetWaveVolume ( $number )
+			GUICtrlSetData ( $Label5, "VolUp," & $number )
+			GUICtrlSetData ( $Label6, "VolDown," & $number )
+		Case $Label6
+			$number = StringSplit( GUICtrlRead ($Label6), ",") [2] - 5
+			SoundSetWaveVolume ( $number )
+			GUICtrlSetData ( $Label5, "VolUp," & $number )
+			GUICtrlSetData ( $Label6, "VolDown," & $number )
+		Case $Label11
+			If $CurrentMusicCtrlID > 0 Then
+				$currLike = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[2]
+				$RowNum = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[3]
+				If $currLike <> "" Then
+					;set data on ListView
+					GUICtrlSetData ( $CurrentMusicCtrlID, "|" & Int($currLike) + 1)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1] & "|" & Int($currLike) + 1 & "|" & $RowNum, True)
+				Else
+					GUICtrlSetData ( $CurrentMusicCtrlID, "|" & 1)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1] & "|" & 1 & "|" & $RowNum, True)
+				EndIf
+			EndIf
+		Case $Label12
+			If $CurrentMusicCtrlID > 0 Then
+				$currLike = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[2]
+				$RowNum = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[3]
+				If $currLike <> "" Then
+					;set data on ListView
+					GUICtrlSetData ( $CurrentMusicCtrlID, "|" & Int($currLike) - 1)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1] & "|" & Int($currLike) - 1 & "|" & $RowNum, True)
+				Else
+					GUICtrlSetData ( $CurrentMusicCtrlID, "|" & -1)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1] & "|" & - 1 & "|" & $RowNum, True)
+				EndIf
+			EndIf
 		Case $Label7
 			$FileSource = FileSelectFolder("Select Music Folder", "")
 			
@@ -138,24 +189,10 @@ While 1
 				$MusicFILEREAD = FileRead ("MusicList.txt", 1 + 256)
 				If FileSearch ($MusicFILEREAD, $FileList[$x]) == False Then
 					GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
-					FileWrite ( $MusicFILE, $FileList[$x] & @CRLF )
-					GUICtrlCreateListViewItem ($FileList[$x] & "|" & "|", $MusicListView )
-				EndIf
-				
-				
-			Next
-			#comments-start
-			For $x=1 to UBound( $FileList ,1) -1
-				;i don't want to override old data....
-				;if it DOES NOT exist: write
-				If IniRead ( $MusicFILE, "MusicData", $FileList[$x], False ) == False Then
-					GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
-					IniWrite ( $MusicFILE, "MusicData", $FileList[$x], $FileList[$x] )
-					;add the song to the listview:
-					GUICtrlCreateListViewItem ($FileList[$x] & "|" & "|", $MusicListView )
+					FileWrite ( $MusicFILE, $FileList[$x] & "|" & "0" & @CRLF )
+					GUICtrlCreateListViewItem ($FileList[$x] & "|" & "0" & "|" & $x, $MusicListView )
 				EndIf
 			Next
-			#comments-end
 			FileClose ($MusicFILE)
 			FileClose ($MusicFOLDERS)
 	EndSwitch
