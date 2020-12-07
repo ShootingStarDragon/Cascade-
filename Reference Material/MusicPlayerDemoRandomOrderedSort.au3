@@ -2,6 +2,9 @@
 #include <GuiListView.au3>
 #include <GUIConstantsEx.au3>
 #include <WindowsConstants.au3>
+#include <Array.au3>
+#include <Sound.au3>
+#include <Timers.au3>
 
 #comments-start
 music app
@@ -21,6 +24,7 @@ find all playlists with this song (so xspf compatible)
 
 -=-=-=-
 plan:
+-> every time i +- out of an array i have to switch array data
 -> plan out random walk (default is this autoplay)
 random walk with weights:
 plan:
@@ -36,8 +40,13 @@ plan:
 -> prev and next buttons
 	prev and next can mess around with this ordering
 -> autoplay
+
+Look up _Timer_SetTimer.
+
+Note that the function called by the timer must have 4 parameters or it won't work. The help doesn't tell you this. You don't have to use the parameters. 
+
 -> refresh music list to add newer songs
-->blacklist filter
+-> blacklist filter
 -=-=-
 -> COMPATIBILITY WITH XSPF
 -> search through playlists for song (have like a dropdown menu for playlist?)
@@ -85,6 +94,10 @@ $Label12 = GUICtrlCreateButton("dislike (-1)", 81, 166, 81, 41)
 Global $MusicListView = GUICtrlCreateListView ("Title|Like Value|Row #", 183, 2, 400,200 )
 _GUICtrlListView_SetExtendedListViewStyle($MusicListView, BitOR($LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT));$LVS_EX_GRIDLINES
 
+;init sorted Arrays
+Global $NegArray[0] = "nil"
+Global $ZeroArray[0] = "nil"
+Global $PosArray[0] = "nil"
 
 If FileExists("MusicList.txt") Then
 	$MusicFILE = FileOpen ("MusicList.txt")
@@ -94,7 +107,7 @@ If FileExists("MusicList.txt") Then
 	Global $MusicArray[$MusicCount][3]
 	
 	;$MusicCount
-	For $x = 0 to 5 -1
+	For $x = 0 to 15 -1
 		;read line
 		$NextLine = FileReadLine ($MusicFILE)
 		$SongName = StringSplit($NextLine, "|")[1]
@@ -111,9 +124,11 @@ Else
 	$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
 	FileClose ($MusicFILE)
 EndIf
+WeightedChoiceInit ()
 GUISetState()
 ;set false ID
 Global $CurrentMusicCtrlID = -1
+$CurrentSongOpen = 0
 While 1
 	Switch GUIGetMsg()
 		Case $GUI_EVENT_CLOSE
@@ -123,7 +138,18 @@ While 1
 			;else say nothing selected
 			If 3+2 = 5 Then
 				$CurrentSong = StringSplit(GUICtrlRead(GUICtrlRead ( $MusicListView)), "|")[1]
-				SoundPlay ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & $CurrentSong)
+				;SoundPlay ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & $CurrentSong)
+				
+				If $CurrentSongOpen <> 0 Then
+					_SoundStop ( $CurrentSongOpen )
+				EndIf
+				
+				$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
+				_SoundPlay ( $CurrentSongOpen )
+				;set timer to play next song:
+
+				_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , AutoPlay )
+
 				GUICtrlSetData ( $Label9, "Playing " & $CurrentSong)
 				;set the ctrl ID because I need to know for +1 -1
 				Global $CurrentMusicCtrlID = GUICtrlRead ( $MusicListView)
@@ -131,7 +157,11 @@ While 1
 				GUICtrlSetData ( $Label9, "No song selected!")
 			EndIf
 		Case $Label4
-			SoundPlay("nosound", 0)
+			;SoundPlay("nosound", 0)
+			If $CurrentSongOpen <> 0 Then
+				_SoundStop ( $CurrentSongOpen )
+			EndIf
+			$CurrentSongOpen = 0
 		Case $Label5
 			$number = StringSplit( GUICtrlRead ($Label5), ",") [2] + 5
 			SoundSetWaveVolume ( $number )
@@ -197,6 +227,97 @@ While 1
 			FileClose ($MusicFOLDERS)
 	EndSwitch
 WEnd
+
+Func WeightedChoiceInit ()
+	;here we set up the arrays for songs:
+	For $x = 0 To _GUICtrlListView_GetItemCount($MusicListView) -1 
+		$SongName = _GUICtrlListView_GetItemText($MusicListView, $x)
+		$LikeVal = Int(_GUICtrlListView_GetItemText($MusicListView, $x, 1))
+		Switch $LikeVal
+			;#array1: songs of negative value
+			Case $LikeVal < 0
+				;send to NegArray
+				If $NegArray[0] == "nil" Then
+					;replace 1st val
+					$NegArray[0] = $SongName 
+				Else
+					_ArrayAdd($NegArray, $SongName & "|" & $LikeVal)
+				EndIf
+			;#array2: songs of 0 value
+			Case $LikeVal = 0
+				;send to ZeroArray
+				If $ZeroArray[0] == "nil" Then
+					;replace 1st val
+					$ZeroArray[0] = $SongName 
+				Else
+					_ArrayAdd($ZeroArray, $SongName & "|" & $LikeVal)
+				EndIf
+			;#array3: songs of positive value
+			Case $LikeVal > 0
+				;send to PosArray
+				If $PosArray[0] == "nil" Then
+					;replace 1st val
+					$PosArray[0] = $SongName 
+				Else
+					_ArrayAdd($PosArray, $SongName & "|" & $LikeVal)
+				EndIf
+		EndSwitch
+	Next
+EndFunc
+
+Func WeightedChoice ()
+	#comments-start
+	random walk with weights:
+	
+	plan:
+		50% new songs
+		50% old songs
+		idea is u have 50% chance to take the max level of likeness (ex: 10) <--- hook onto +1 func?
+			then from all the songs that are rated 10 in this example, u pick a random song
+				if you play a new song too much, you skip (and skipping is a -1)
+			if no songs, then go to 9
+	#comments-end
+	;instead of going through 5000 lines repeatedly i should store listened songs in memory and ???
+	$Choice1 = Random ( 0,1,1 )
+	If $Choice1 == 0 Then
+		;pick a negative song 25% of the time:
+		$Choice2 = Random ( 0,3,1 )
+		If $Choice2 == 0 Then
+			;pick a negative val song
+			Return $NegArray[Random(0,UBound($NegArray, 1),1)]
+		Else
+			;pick neutral song ( likeval of 0)
+			Return $ZeroArray[Random(0,UBound($ZeroArray, 1),1)]
+		EndIf 
+	Else
+		;old song
+		$MaxLike = _ArrayMax ( $PosArray ,1 , -1 , -1 , 1 )
+		For $x = $MaxLine To 0 Step -1
+			;successively 1/2 chance to choose from $xth like song. this levels out so u listen to like 2 songs way more than like 1 songs and ur forced to -1 them
+			$Choice3 = Random ( 0,1,1 )
+			If $Choice3 == 0 Then
+				;choose a song of this like value
+				$ValidLikeArray = StringRegExp ( _ArrayToString($PosArray, " | "), "^(.+?)\|" , 1)
+				Return $ValidLikeArray[Random(0,UBound($ValidLikeArray, 1),1)]
+			EndIf
+		Next
+	EndIf
+
+	
+EndFunc
+
+Func AutoPlay ()
+	;called when song is supposedly over
+	;make sure the song is actually over (aka nothing is playing)
+	
+	;randomly pick the next song
+	;set the timer again to songlength + 500 miliseconds
+	;WeightedChoice()
+	
+	If $CurrentSongOpen <> 0 Then
+		_SoundStop ( $CurrentSongOpen )
+	EndIf
+EndFunc
 
 Func FileSearch ($FileReadObj, $string)
 	If @error = -1 Then
