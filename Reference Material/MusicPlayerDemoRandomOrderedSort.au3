@@ -7,57 +7,41 @@
 #include <Timers.au3>
 
 #comments-start
-music app
-
->sort through all the songs, 
-	give a +1 to songs u want to listen to again, 
-	-1 to u don't like, 
-	+1 to songs that you keep playing 
-		(up to a limit, u don't want to listen to a song 10x in a row.... or even 10 times out of 20 songs... unless....?), 
-	ability to blacklist files from the random search
-random music-> take 5 sec to let me sort into playlist
-find all playlists with this song (so xspf compatible)
->for the music player there should be a sort option where u go through ALL songs then sort out the song into a playlist
-
->remember relative audio levels for songs...
->can play music using xspf files
 
 -=-=-=-
 plan:
--> every time i +- out of an array i have to switch array data
+-> init timerid with string "nil"
+->set a timer ID, then use killtimer to kill that timer and mess wround like in the transcendence days, 
+-> autoplay
 -> plan out random walk (default is this autoplay)
-random walk with weights:
-plan:
-	set timer for the song length +1 second
-	if song is NOT playing: pick new song and add to history (use _SoundStatus function instead of soundplay)
-	50% new songs
-	50% old songs
-	idea is u have 50% chance to take the max level of likeness (ex: 10) <--- hook onto +1 func?
-		then from all the songs that are rated 10 in this example, u pick a random song
-			if you play a new song too much, you skip (and skipping is a -1)
-		if no songs, then go to 9
-
+	random walk with weights:
+	plan:
+		set timer for the song length +1 second
+		if song is NOT playing: pick new song and add to history (use _SoundStatus function instead of soundplay)
+		50% new songs
+		50% old songs
+		idea is u have 50% chance to take the max level of likeness (ex: 10) <--- hook onto +1 func?
+			then from all the songs that are rated 10 in this example, u pick a random song
+				if you play a new song too much, you skip (and skipping is a -1)
+			if no songs, then go to 9
+-> every time i +- out of an array i have to switch array data
+-> refresh music list to add newer songs (have to because resetting songlist will kill my song +- values)
+-> blacklist filter remove song from list and ???
 -> prev and next buttons
 	prev and next can mess around with this ordering
--> autoplay
 
-Look up _Timer_SetTimer.
-
-Note that the function called by the timer must have 4 parameters or it won't work. The help doesn't tell you this. You don't have to use the parameters. 
-
--> refresh music list to add newer songs
--> blacklist filter
--=-=-
+-=-=-=-=-=-=-=-=--
 -> COMPATIBILITY WITH XSPF
 -> search through playlists for song (have like a dropdown menu for playlist?)
 -> add song to playlist....
 
 
 
-add the ez buttons:
-	hard buttons:
-		prev
-		next
+find all playlists with this song (so xspf compatible)
+>for the music player there should be a sort option where u go through ALL songs then sort out the song into a playlist
+
+>remember relative audio levels for songs...
+>can play music using xspf files
 
 		
 
@@ -66,13 +50,10 @@ add the ez buttons:
 	
 get music from folder
 	(skip) have ability to search through multiple folders
--> shitty file structure
-->???
-->???
-->???
--=-=-
-PROBLEMS:
-i have to reload the entire array if i want to update ini file... (probably do an array subtraction first then update?)
+
+Look up _Timer_SetTimer.
+Note that the function called by the timer must have 4 parameters or it won't work. The help doesn't tell you this. You don't have to use the parameters. 
+
 #comments-end
 
 $hGUI = GUICreate("MPDROS",600,500,-1,-1,$WS_SIZEBOX)
@@ -95,9 +76,16 @@ Global $MusicListView = GUICtrlCreateListView ("Title|Like Value|Row #", 183, 2,
 _GUICtrlListView_SetExtendedListViewStyle($MusicListView, BitOR($LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT));$LVS_EX_GRIDLINES
 
 ;init sorted Arrays
-Global $NegArray[0] = "nil"
-Global $ZeroArray[0] = "nil"
-Global $PosArray[0] = "nil"
+Global $NegArray[1][2] 
+	$NegArray[0][0] = "nil"
+Global $ZeroArray[1][2] 
+	$ZeroArray[0][0] = "nil"
+Global $PosArray[1][2]
+	$PosArray[0][0] = "nil"
+;_ArrayDisplay($ZeroArray)
+;history array:
+Global $HistoryArray[1]
+	$HistoryArray[0] = "nil"
 
 If FileExists("MusicList.txt") Then
 	$MusicFILE = FileOpen ("MusicList.txt")
@@ -124,6 +112,7 @@ Else
 	$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
 	FileClose ($MusicFILE)
 EndIf
+
 WeightedChoiceInit ()
 GUISetState()
 ;set false ID
@@ -148,11 +137,19 @@ While 1
 				_SoundPlay ( $CurrentSongOpen )
 				;set timer to play next song:
 
-				_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , AutoPlay )
+				_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
 
 				GUICtrlSetData ( $Label9, "Playing " & $CurrentSong)
 				;set the ctrl ID because I need to know for +1 -1
 				Global $CurrentMusicCtrlID = GUICtrlRead ( $MusicListView)
+				
+				;append to history array:
+				If $HistoryArray[0] == "nil" Then
+					;replace 1st val
+					$HistoryArray[0] = $CurrentSong 
+				Else
+					_ArrayAdd($HistoryArray, $CurrentSong)
+				EndIf
 			Else
 				GUICtrlSetData ( $Label9, "No song selected!")
 			EndIf
@@ -172,8 +169,19 @@ While 1
 			SoundSetWaveVolume ( $number )
 			GUICtrlSetData ( $Label5, "VolUp," & $number )
 			GUICtrlSetData ( $Label6, "VolDown," & $number )
+		Case $Label8
+			WeightedChoice()
+			;_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
+			;_ArrayDisplay($NegArray)
+			;_ArrayDisplay($ZeroArray)
+			;_ArrayDisplay($PosArray)
+			;GUICtrlSetData ( $Label9, _SoundStatus ( $CurrentSongOpen ) == 0)
+			;GUICtrlSetData ( $Label9, IsString(_SoundStatus ( $CurrentSongOpen )))
+			;GUICtrlSetData ( $Label9, _SoundStatus ( $CurrentSongOpen ))
+			;another check is try to append to the string
 		Case $Label11
 			If $CurrentMusicCtrlID > 0 Then
+				$SongName = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1]
 				$currLike = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[2]
 				$RowNum = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[3]
 				If $currLike <> "" Then
@@ -184,6 +192,21 @@ While 1
 					GUICtrlSetData ( $CurrentMusicCtrlID, "|" & 1)
 					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1] & "|" & 1 & "|" & $RowNum, True)
 				EndIf
+				;here if we reach certain thresholds we move the file from Neg,Zero, and Pos array to the right array:
+				;set old array
+				Switch $currLike
+					Case $currLike < 0
+						$OldArray = $NegArray
+					Case $currLike = 0
+						$OldArray = $ZeroArray
+					Case $currLike > 0
+						$OldArray = $PosArray
+				EndSwitch
+				;delete val in old array
+					;_ArraySearch ($OldArray, $SongName [, $iStart = 0 [, $iEnd = 0 [, $iCase = 0 [, $iCompare = 0 [, $iForward = 1 [, $iSubItem = -1 [, $bRow = False]]]]]]] )
+					;you DO search a column
+					;_ArraySearch($avArray, $sSearch, 0, 0, 0, 1, 1, $sColumn)
+				;add to new array
 			EndIf
 		Case $Label12
 			If $CurrentMusicCtrlID > 0 Then
@@ -231,44 +254,69 @@ WEnd
 Func WeightedChoiceInit ()
 	;here we set up the arrays for songs:
 	For $x = 0 To _GUICtrlListView_GetItemCount($MusicListView) -1 
-		$SongName = _GUICtrlListView_GetItemText($MusicListView, $x)
+		$SongName = _GUICtrlListView_GetItemText($MusicListView, $x, 0)
 		$LikeVal = Int(_GUICtrlListView_GetItemText($MusicListView, $x, 1))
-		Switch $LikeVal
+		;MsgBox(0, "Error",$SongName)
+		;MsgBox(0, "Error1",$LikeVal)
+		;MsgBox(0, "Error2",$LikeVal < 0)
+		;MsgBox(0, "Error3",$LikeVal = 0)
+		;MsgBox(0, "Error4",$LikeVal > 0)
+		
+		$SwitchVar = "Z"
+		If $LikeVal < 0 Then
+			$SwitchVar = "A"
+		EndIf
+		If $LikeVal = 0 Then
+			$SwitchVar = "B"
+		EndIf
+		If $LikeVal > 0 Then
+			$SwitchVar = "C"
+		EndIf
+		
+		Switch $SwitchVar
 			;#array1: songs of negative value
-			Case $LikeVal < 0
+			Case "A"
 				;send to NegArray
-				If $NegArray[0] == "nil" Then
+				If $NegArray[0][0] == "nil" Then
 					;replace 1st val
-					$NegArray[0] = $SongName 
+					$NegArray[0][0] = $SongName 
+					$NegArray[0][1] = $LikeVal 
 				Else
 					_ArrayAdd($NegArray, $SongName & "|" & $LikeVal)
 				EndIf
 			;#array2: songs of 0 value
-			Case $LikeVal = 0
+			Case "B"
+				;MsgBox(0, "Error","=0 triggered!")
 				;send to ZeroArray
-				If $ZeroArray[0] == "nil" Then
+				If $ZeroArray[0][0] == "nil" Then
 					;replace 1st val
-					$ZeroArray[0] = $SongName 
+					$ZeroArray[0][0] = $SongName 
+					;_ArrayDisplay($ZeroArray)
+					$ZeroArray[0][1] = $LikeVal
 				Else
 					_ArrayAdd($ZeroArray, $SongName & "|" & $LikeVal)
 				EndIf
 			;#array3: songs of positive value
-			Case $LikeVal > 0
+			Case "C"
 				;send to PosArray
-				If $PosArray[0] == "nil" Then
+				If $PosArray[0][0] == "nil" Then
 					;replace 1st val
-					$PosArray[0] = $SongName 
+					$PosArray[0][0] = $SongName 
+					$PosArray[0][1] = $LikeVal
 				Else
 					_ArrayAdd($PosArray, $SongName & "|" & $LikeVal)
 				EndIf
 		EndSwitch
+		;_ArrayDisplay($NegArray)
+		;_ArrayDisplay($ZeroArray)
+		;_ArrayDisplay($PosArray)
 	Next
 EndFunc
 
 Func WeightedChoice ()
 	#comments-start
 	random walk with weights:
-	
+	;324, 313
 	plan:
 		50% new songs
 		50% old songs
@@ -284,38 +332,76 @@ Func WeightedChoice ()
 		$Choice2 = Random ( 0,3,1 )
 		If $Choice2 == 0 Then
 			;pick a negative val song
-			Return $NegArray[Random(0,UBound($NegArray, 1),1)]
+			$NegTest = Random(0,UBound($NegArray, 1)-1,1)
+			;MsgBox(0, "NegArrayVals", $NegTest )
+			;_ArrayDisplay($NegArray)
+			Return $NegArray[$NegTest][0]
 		Else
 			;pick neutral song ( likeval of 0)
-			Return $ZeroArray[Random(0,UBound($ZeroArray, 1),1)]
+			;_ArrayDisplay($ZeroArray)
+			$ZeroTest = Random(0,UBound($ZeroArray, 1)-1,1)
+			;MsgBox(0, "ZeroArrayVals", $ZeroTest )
+			Return $ZeroArray[$ZeroTest][0]
 		EndIf 
 	Else
 		;old song
 		$MaxLike = _ArrayMax ( $PosArray ,1 , -1 , -1 , 1 )
-		For $x = $MaxLine To 0 Step -1
+		For $x = $MaxLike To 0 Step -1
 			;successively 1/2 chance to choose from $xth like song. this levels out so u listen to like 2 songs way more than like 1 songs and ur forced to -1 them
 			$Choice3 = Random ( 0,1,1 )
+			;if I hit a likeval with no song, go random in poslist
 			If $Choice3 == 0 Then
+				;this set can fail if there are like vals with no song...
+			
 				;choose a song of this like value
-				$ValidLikeArray = StringRegExp ( _ArrayToString($PosArray, " | "), "^(.+?)\|" , 1)
-				Return $ValidLikeArray[Random(0,UBound($ValidLikeArray, 1),1)]
+				;the way i create the array is wrong, just fucking filter manually.
+				;$ValidLikeArray = StringRegExp ( _ArrayToString($PosArray, " | "), "^(.+?)\|" , 1)
+				Global $ValidLikeArray[1]
+				$ValidLikeArray[0] = "nil"
+				For $i = 0 To UBound($PosArray, 1)-1
+					If $ValidLikeArray[0] == "nil" and $PosArray[$i][1] == $x Then
+						$ValidLikeArray[0] = $PosArray[$i][0]
+					ElseIf $PosArray[$i][1] == $x Then
+						_ArrayAdd($ValidLikeArray,$PosArray[$i][0])
+					EndIf
+				Next
+				;;;MsgBox(0, "LikeValChosen", $x)
+				;;;_ArrayDisplay($ValidLikeArray)
+				$LikeTest = Random(0,UBound($ValidLikeArray, 1)-1,1)
+				;MsgBox(0, "LikeArrayVals", $LikeTest & "|" & 0 & "|" & $Choice1 & "|" & "|" & $Choice3)
+				;MsgBox(0, $Choice1 & "|" & "|" & $Choice3, StringRegExp ( _ArrayToString($PosArray, " | "), "^(.+?)\|" , 1))
+				;MsgBox(0, $Choice1 & "|" & "|" & $Choice3, $ValidLikeArray[$LikeTest][0])
+				;;;MsgBox(0, "LikeTest", $LikeTest)
+				;_ArrayDisplay($ValidLikeArray)
+				;;;_ArrayDisplay($PosArray)
+				;;;_ArrayDisplay($ValidLikeArray)
+				;;;MsgBox(0, "VALIDLIKEPICK", $ValidLikeArray[$LikeTest])
+				If $ValidLikeArray[$LikeTest] == "nil" Then
+					$TheAns = $PosArray[Random(0,UBound($PosArray,1)-1,1)][0]
+					;;;MsgBox(0, "VALIDLIKEPICK", $TheAns)
+					Return $TheAns
+				Else
+					Return $ValidLikeArray[$LikeTest]
+				EndIf
+				
+				
 			EndIf
 		Next
 	EndIf
-
-	
 EndFunc
 
-Func AutoPlay ()
-	;called when song is supposedly over
-	;make sure the song is actually over (aka nothing is playing)
-	
-	;randomly pick the next song
-	;set the timer again to songlength + 500 miliseconds
-	;WeightedChoice()
-	
-	If $CurrentSongOpen <> 0 Then
-		_SoundStop ( $CurrentSongOpen )
+;HEADS UP FUNCTION DIES IF IT ISNT GIVEN 4 ARGS! (when triggered by timer funcs)
+Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
+	#forceref $hWnd, $iMsg, $iIDTimer, $iTime
+	GUICtrlSetData ( $Label9, "Autoplay triggered!..." & _SoundStatus ( $CurrentSongOpen ) == 0)
+	;make sure nothing is playing
+	If  _SoundStatus ( $CurrentSongOpen ) == 0 or _SoundStatus ( $CurrentSongOpen ) == "stopped" Then
+		;randomly pick the next song
+		$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & WeightedChoice() )
+		GUICtrlSetData ( $Label9, "Autoplay triggered2!..." & StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & WeightedChoice())
+		_SoundPlay ( $CurrentSongOpen )
+		;set the timer again to songlength + 500 miliseconds
+		;_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , AutoPlay )
 	EndIf
 EndFunc
 
