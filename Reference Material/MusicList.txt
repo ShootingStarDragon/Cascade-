@@ -10,8 +10,8 @@ $uchmo$ - $TAY TUNE [kissmenerdygirl bootleg EDIT].mp3|0
 'Gekka Reijin (月下麗人)' by Buck-Tick .mp3|0
 'Kirakira' Mawaru Penguindrum (Volume 1) OST.mp3|0
 'Mezame' by Yuki Kajiura.mp3|0
-'NOT THE FUTURE' -- Extended Lyric Video.mp3|0
-'Outsmarting monika'.mp3|0
+'NOT THE FUTURE' -- Extended Lyric Video.mp3|-1|13
+'Outsmarting monika'.mp3|-1|14
 'Over my Head' - The Fray Lyrics.mp3|0
 'Polymorphia na 48 instrumentów smyczkowych' _ 'Polymorphia for 48 stringed instruments'.mp3|0
 'Revenge' - A Minecraft Parody of Usher's DJ Got Us Fallin' In Love (Music Video).mp3|0

@@ -10,11 +10,12 @@
 
 -> timer plans: use autoplay or at least init/register the timerID globally
 -=-=-=-
+;on init the -,0,+ arrays are nil and then -/+ buttons don't clear nil
 plan:
-
-
--> refresh music list to add newer songs (have to because resetting songlist will kill my song +- values)
--> blacklist filter remove song from list and ???
+-> blacklist filter remove song from list and ???	
+	;remove from listview
+	;from the right neg/zero/pos array
+	;from music.txt
 -> prev and next buttons
 	prev and next can mess around with this ordering
 -> search would be nice....
@@ -71,6 +72,7 @@ $Label9 = GUICtrlCreateLabel("", 0, 207, 400, 30)
 ;max char length: ??????????????????????????????????????????????????????????????????
 $Label11 = GUICtrlCreateButton("like (+1)", 0, 166, 81, 41)
 $Label12 = GUICtrlCreateButton("dislike (-1)", 81, 166, 81, 41)
+$Label13 = GUICtrlCreateButton("blacklist", 0, 220, 81, 41)
 
 Global $MusicListView = GUICtrlCreateListView ("Title|Like Value|Row #", 183, 2, 400,200 )
 _GUICtrlListView_SetExtendedListViewStyle($MusicListView, BitOR($LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT));$LVS_EX_GRIDLINES
@@ -173,19 +175,11 @@ While 1
 			;MsgBox(0,"??",_GUICtrlListView_GetSelectedIndices ( $MusicListView ))
 			;WeightedChoice()
 			;_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
-			$MusicFILE = FileOpen ("MusicList.txt", 256)
-			$MusicFILEREAD = FileRead ($MusicFILE)
-			MsgBox(0,"???", FileSearch ($MusicFILEREAD, " Gatchaman Insight  - I n s i g h t _ Full Opening.mp3"))
-			MsgBox(0,"???", FileSearch ($MusicFILEREAD, "#7 A Secret of the Moon (Planetes Original Sound Track Album 1).mp3"))
-			;.mp3 is a problem
-			MsgBox(0,"???", FileSearch ($MusicFILEREAD, "(Planetes Original Sound Track Album 1)"))
-			MsgBox(0,"???", FileSearch ($MusicFILEREAD, "#7 A Secret of the Moon (Planetes Original Sound Track Album 1).mp3|0"))
-			MsgBox(0,"???", FileSearch ($MusicFILEREAD, "03 決闘のテーマ.mp3"))
-			FileClose ($MusicFILE)
+			
 			;MsgBox(0,"???", $MusicFILEREAD)
-			;_ArrayDisplay($NegArray)
-			;_ArrayDisplay($ZeroArray)
-			;_ArrayDisplay($PosArray)
+			_ArrayDisplay($NegArray)
+			_ArrayDisplay($ZeroArray)
+			_ArrayDisplay($PosArray)
 			;GUICtrlSetData ( $Label9, _SoundStatus ( $CurrentSongOpen ) == 0)
 			;GUICtrlSetData ( $Label9, IsString(_SoundStatus ( $CurrentSongOpen )))
 			;GUICtrlSetData ( $Label9, _SoundStatus ( $CurrentSongOpen ))
@@ -214,12 +208,22 @@ While 1
 				Switch $currLike
 					;can't reference arrays with other varnames so have to manually type shit out
 					Case $currLike + 1 = 0
-						_ArrayAdd($ZeroArray, $SongName & "|" & $currLike)
+						If $ZeroArray[0][0] == "nil" Then
+							$ZeroArray[0][0] = $SongName
+							$ZeroArray[0][1] = $currLike
+						Else
+							_ArrayAdd($ZeroArray, $SongName & "|" & $currLike)
+						EndIf
 						$OldIndex = _ArraySearch ($NegArray, $SongName ,0,0,0,0,1,0,False)
 						_ArrayDelete ($NegArray, $OldIndex )
 					;can't reference arrays with other varnames so have to manually type shit out
 					Case $currLike + 1 > 0 and $currLike == 0
-						_ArrayAdd($PosArray, $SongName & "|" & $currLike)
+						If $PosArray[0][0] == "nil" Then
+							$PosArray[0][0] = $SongName
+							$PosArray[0][1] = $currLike
+						Else
+							_ArrayAdd($PosArray, $SongName & "|" & $currLike)
+						EndIf
 						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
 						_ArrayDelete ($ZeroArray, $OldIndex )
 				EndSwitch
@@ -245,18 +249,53 @@ While 1
 				Switch $currLike
 					;can't reference arrays with other varnames so have to manually type shit out
 					Case $currLike - 1 = 0
-						_ArrayAdd($ZeroArray, $SongName & "|" & $currLike)
+						If $ZeroArray[0][0] == "nil" Then
+							$ZeroArray[0][0] = $SongName
+							$ZeroArray[0][1] = $currLike
+						Else
+							_ArrayAdd($ZeroArray, $SongName & "|" & $currLike)
+						EndIf
 						$OldIndex = _ArraySearch ($PosArray, $SongName ,0,0,0,0,1,0,False)
 						_ArrayDelete ($PosArray, $OldIndex )
 					;can't reference arrays with other varnames so have to manually type shit out
 					Case $currLike - 1 < 0 and $currLike == 0
-						_ArrayAdd($NegArray, $SongName & "|" & $currLike)
+						If $NegArray[0][0] == "nil" Then
+							$NegArray[0][0] = $SongName
+							$NegArray[0][1] = $currLike
+						Else
+							_ArrayAdd($NegArray, $SongName & "|" & $currLike)
+						EndIf
 						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
 						_ArrayDelete ($ZeroArray, $OldIndex )
 				EndSwitch
 			EndIf
 		Case $Label7
 			MusicListInit(FileSelectFolder("Select Music Folder", ""))
+		Case $label13
+			;blacklist filter remove song from list and ???	
+			
+			$SelectedSongID = GUICtrlRead($MusicListView)
+			$SelectedSong = GUICtrlRead(GUICtrlRead($MusicListView))
+			If GUICtrlRead($MusicListView) > 0 Then
+				MsgBox(0,"", StringSplit(GUICtrlRead(GUICtrlRead($MusicListView),1), "|")[2])
+				$SongName = StringSplit(GUICtrlRead(GUICtrlRead($MusicListView),1), "|")[1]
+				$currLikeVAL = StringSplit(GUICtrlRead(GUICtrlRead($MusicListView),1), "|")[2]
+				;remove from listview
+				GUICtrlDelete($SelectedSongID)
+				;from the right neg/zero/pos array
+				Switch $currLikeVAL
+					Case $currLikeVAL < 0
+						$OldIndex = _ArraySearch ($NegArray, $SongName ,0,0,0,0,1,0,False)
+						_ArrayDelete ($NegArray, $OldIndex )
+					Case $currLikeVAL = 0
+						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
+						_ArrayDelete ($NegArray, $OldIndex )
+					Case $currLikeVAL > 0
+						$OldIndex = _ArraySearch ($PosArray, $SongName ,0,0,0,0,1,0,False)
+						_ArrayDelete ($NegArray, $OldIndex )
+				EndSwitch
+				;from music.txt
+			EndIf
 	EndSwitch
 WEnd
 
