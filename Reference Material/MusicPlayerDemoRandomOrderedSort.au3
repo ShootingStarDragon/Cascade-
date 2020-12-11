@@ -8,28 +8,16 @@
 
 #comments-start
 
+-> timer plans: use autoplay or at least init/register the timerID globally
 -=-=-=-
 plan:
--> init timerid with string "nil"
-->set a timer ID, then use killtimer to kill that timer and mess wround like in the transcendence days, 
--> autoplay
--> plan out random walk (default is this autoplay)
-	random walk with weights:
-	plan:
-		set timer for the song length +1 second
-		if song is NOT playing: pick new song and add to history (use _SoundStatus function instead of soundplay)
-		50% new songs
-		50% old songs
-		idea is u have 50% chance to take the max level of likeness (ex: 10) <--- hook onto +1 func?
-			then from all the songs that are rated 10 in this example, u pick a random song
-				if you play a new song too much, you skip (and skipping is a -1)
-			if no songs, then go to 9
--> every time i +- out of an array i have to switch array data
+
+
 -> refresh music list to add newer songs (have to because resetting songlist will kill my song +- values)
 -> blacklist filter remove song from list and ???
 -> prev and next buttons
 	prev and next can mess around with this ordering
-
+-> search would be nice....
 -=-=-=-=-=-=-=-=--
 -> COMPATIBILITY WITH XSPF
 -> search through playlists for song (have like a dropdown menu for playlist?)
@@ -47,7 +35,19 @@ find all playlists with this song (so xspf compatible)
 
 
 
-	
+-> autoplay
+-> plan out random walk (default is this autoplay)
+	random walk with weights:
+	plan:
+		set timer for the song length +1 second
+		if song is NOT playing: pick new song and add to history (use _SoundStatus function instead of soundplay)
+		50% new songs
+		50% old songs
+		idea is u have 50% chance to take the max level of likeness (ex: 10) <--- hook onto +1 func?
+			then from all the songs that are rated 10 in this example, u pick a random song
+				if you play a new song too much, you skip (and skipping is a -1)
+			if no songs, then go to 9
+		
 get music from folder
 	(skip) have ability to search through multiple folders
 
@@ -141,7 +141,7 @@ While 1
 
 				GUICtrlSetData ( $Label9, "Playing " & $CurrentSong)
 				;set the ctrl ID because I need to know for +1 -1
-				Global $CurrentMusicCtrlID = GUICtrlRead ( $MusicListView)
+				Global $CurrentMusicCtrlID = GUICtrlRead($MusicListView)
 				
 				;append to history array:
 				If $HistoryArray[0] == "nil" Then
@@ -170,8 +170,19 @@ While 1
 			GUICtrlSetData ( $Label5, "VolUp," & $number )
 			GUICtrlSetData ( $Label6, "VolDown," & $number )
 		Case $Label8
-			WeightedChoice()
+			;MsgBox(0,"??",_GUICtrlListView_GetSelectedIndices ( $MusicListView ))
+			;WeightedChoice()
 			;_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
+			$MusicFILE = FileOpen ("MusicList.txt", 256)
+			$MusicFILEREAD = FileRead ($MusicFILE)
+			MsgBox(0,"???", FileSearch ($MusicFILEREAD, " Gatchaman Insight  - I n s i g h t _ Full Opening.mp3"))
+			MsgBox(0,"???", FileSearch ($MusicFILEREAD, "#7 A Secret of the Moon (Planetes Original Sound Track Album 1).mp3"))
+			;.mp3 is a problem
+			MsgBox(0,"???", FileSearch ($MusicFILEREAD, "(Planetes Original Sound Track Album 1)"))
+			MsgBox(0,"???", FileSearch ($MusicFILEREAD, "#7 A Secret of the Moon (Planetes Original Sound Track Album 1).mp3|0"))
+			MsgBox(0,"???", FileSearch ($MusicFILEREAD, "03 決闘のテーマ.mp3"))
+			FileClose ($MusicFILE)
+			;MsgBox(0,"???", $MusicFILEREAD)
 			;_ArrayDisplay($NegArray)
 			;_ArrayDisplay($ZeroArray)
 			;_ArrayDisplay($PosArray)
@@ -180,76 +191,114 @@ While 1
 			;GUICtrlSetData ( $Label9, _SoundStatus ( $CurrentSongOpen ))
 			;another check is try to append to the string
 		Case $Label11
-			If $CurrentMusicCtrlID > 0 Then
-				$SongName = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1]
-				$currLike = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[2]
-				$RowNum = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[3]
+			$SelectedSongID = GUICtrlRead($MusicListView)
+			$SelectedSong = GUICtrlRead(GUICtrlRead($MusicListView))
+			;MsgBox(0,"?", $SelectedSong)
+			If GUICtrlRead($MusicListView) > 0 Then
+			
+				$SongName = StringSplit($SelectedSong, "|")[1]
+				$currLike = StringSplit($SelectedSong, "|")[2]
+				$RowNum = StringSplit($SelectedSong, "|")[3]
+
 				If $currLike <> "" Then
 					;set data on ListView
-					GUICtrlSetData ( $CurrentMusicCtrlID, "|" & Int($currLike) + 1)
-					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1] & "|" & Int($currLike) + 1 & "|" & $RowNum, True)
+					GUICtrlSetData ( $SelectedSongID, "|" & Int($currLike) + 1)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & Int($currLike) + 1 & "|" & $RowNum, True)
 				Else
-					GUICtrlSetData ( $CurrentMusicCtrlID, "|" & 1)
-					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1] & "|" & 1 & "|" & $RowNum, True)
+					GUICtrlSetData ( $SelectedSongID, "|" & 1)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & 1 & "|" & $RowNum, True)
 				EndIf
 				;here if we reach certain thresholds we move the file from Neg,Zero, and Pos array to the right array:
 				;set old array
+				;can't reference arrays with other varnames so have to manually type shit out
 				Switch $currLike
-					Case $currLike < 0
-						$OldArray = $NegArray
-					Case $currLike = 0
-						$OldArray = $ZeroArray
-					Case $currLike > 0
-						$OldArray = $PosArray
+					;can't reference arrays with other varnames so have to manually type shit out
+					Case $currLike + 1 = 0
+						_ArrayAdd($ZeroArray, $SongName & "|" & $currLike)
+						$OldIndex = _ArraySearch ($NegArray, $SongName ,0,0,0,0,1,0,False)
+						_ArrayDelete ($NegArray, $OldIndex )
+					;can't reference arrays with other varnames so have to manually type shit out
+					Case $currLike + 1 > 0 and $currLike == 0
+						_ArrayAdd($PosArray, $SongName & "|" & $currLike)
+						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
+						_ArrayDelete ($ZeroArray, $OldIndex )
 				EndSwitch
-				;delete val in old array
-					;_ArraySearch ($OldArray, $SongName [, $iStart = 0 [, $iEnd = 0 [, $iCase = 0 [, $iCompare = 0 [, $iForward = 1 [, $iSubItem = -1 [, $bRow = False]]]]]]] )
-					;you DO search a column
-					;_ArraySearch($avArray, $sSearch, 0, 0, 0, 1, 1, $sColumn)
-				;add to new array
 			EndIf
 		Case $Label12
-			If $CurrentMusicCtrlID > 0 Then
-				$currLike = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[2]
-				$RowNum = StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[3]
+			$SelectedSongID = GUICtrlRead($MusicListView)
+			$SelectedSong = GUICtrlRead(GUICtrlRead($MusicListView))
+			;MsgBox(0,"??", StringSplit($SelectedSong, "|"))
+			;StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")
+			If GUICtrlRead($MusicListView) > 0 Then
+				$SongName = StringSplit($SelectedSong, "|")[1]
+				$currLike = StringSplit($SelectedSong, "|")[2]
+				$RowNum = StringSplit($SelectedSong, "|")[3]
 				If $currLike <> "" Then
 					;set data on ListView
-					GUICtrlSetData ( $CurrentMusicCtrlID, "|" & Int($currLike) - 1)
-					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1] & "|" & Int($currLike) - 1 & "|" & $RowNum, True)
+					GUICtrlSetData ( $SelectedSongID, "|" & Int($currLike) - 1)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & Int($currLike) - 1 & "|" & $RowNum, True)
 				Else
-					GUICtrlSetData ( $CurrentMusicCtrlID, "|" & -1)
-					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $CurrentMusicCtrlID), "|")[1] & "|" & - 1 & "|" & $RowNum, True)
+					GUICtrlSetData ( $SelectedSongID, "|" & -1)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & - 1 & "|" & $RowNum, True)
 				EndIf
+				
+				Switch $currLike
+					;can't reference arrays with other varnames so have to manually type shit out
+					Case $currLike - 1 = 0
+						_ArrayAdd($ZeroArray, $SongName & "|" & $currLike)
+						$OldIndex = _ArraySearch ($PosArray, $SongName ,0,0,0,0,1,0,False)
+						_ArrayDelete ($PosArray, $OldIndex )
+					;can't reference arrays with other varnames so have to manually type shit out
+					Case $currLike - 1 < 0 and $currLike == 0
+						_ArrayAdd($NegArray, $SongName & "|" & $currLike)
+						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
+						_ArrayDelete ($ZeroArray, $OldIndex )
+				EndSwitch
 			EndIf
 		Case $Label7
-			$FileSource = FileSelectFolder("Select Music Folder", "")
-			
-			$FileList = _FileListToArray($FileSource, "*.mp3", 0)
-			;IniWrite ( "filename", "section", "key", "value" )
-			;IniRead ( "filename", "section", "key", "default" )
-			do
-			Sleep (500)
-			Until IsInt ( $FileList[0] )
-			$MusicFILE = FileOpen ("MusicList.txt", 1 + 256)
-			$MusicFILEREAD = FileRead ("MusicList.txt", 1 + 256)
-			$MusicFOLDERS = FileOpen ("MusicFolders.txt", 1 + 256)
-			FileWrite ( $MusicFOLDERS, $FileSource & @CRLF )
-			
-			For $x=1 to UBound( $FileList ,1) -1
-				;i don't want to override old data....
-				;if it DOES NOT exist: write
-				;reread to update
-				$MusicFILEREAD = FileRead ("MusicList.txt", 1 + 256)
-				If FileSearch ($MusicFILEREAD, $FileList[$x]) == False Then
-					GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
-					FileWrite ( $MusicFILE, $FileList[$x] & "|" & "0" & @CRLF )
-					GUICtrlCreateListViewItem ($FileList[$x] & "|" & "0" & "|" & $x, $MusicListView )
-				EndIf
-			Next
-			FileClose ($MusicFILE)
-			FileClose ($MusicFOLDERS)
+			MusicListInit(FileSelectFolder("Select Music Folder", ""))
 	EndSwitch
 WEnd
+
+Func MusicListInit ($FileSourceGIVEN)
+	$FileSource = $FileSourceGIVEN
+	$FileList = _FileListToArray($FileSource, "*.mp3", 0)
+	;IniWrite ( "filename", "section", "key", "value" )
+	;IniRead ( "filename", "section", "key", "default" )
+	do
+	Sleep (500)
+	Until IsInt ( $FileList[0] )
+	$MusicFILE = FileOpen ("MusicList.txt", 1 + 256)
+	$MusicFILEREAD = FileRead ($MusicFILE)
+	$MusicFOLDERS = FileOpen ("MusicFolders.txt", 1 + 256)
+	FileWrite($MusicFOLDERS, $FileSource & @CRLF )
+	FileClose ($MusicFILE)
+	
+	For $x=1 to UBound( $FileList ,1) -1
+		;i don't want to override old data....
+		;if it DOES NOT exist: write
+		;reread to update
+		$MusicFILE = FileOpen ("MusicList.txt", 256)
+		$MusicFILEREAD = FileRead ($MusicFILE)
+		;MsgBox(0,"???", FileSearch ($MusicFILEREAD, " Gatchaman Insight  - I n s i g h t _ Full Opening.mp3"))
+		;MsgBox(0,"??", $FileList[$x] & "|" & FileSearch ($MusicFILEREAD, $FileList[$x]))
+		If FileSearch ($MusicFILEREAD, $FileList[$x]) == False Then
+			FileClose ($MusicFILE)
+			GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
+			;MsgBox(0,"write this", $FileList[$x] & "|" & "0" & @CRLF )
+			;MsgBox(0,"write this", UBound( $FileList ,1) -1)
+			$MusicFILE = FileOpen ("MusicList.txt", 1 + 256)
+			FileWrite ( $MusicFILE, $FileList[$x] & "|" & "0" & @CRLF )
+			MsgBox(0,"what is pos", FileGetPos($MusicFILE))
+			FileClose ($MusicFILE)
+			;GUICtrlCreateListViewItem ($FileList[$x] & "|" & "0" & "|" & $x, $MusicListView )
+		Else
+			GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
+		EndIf
+		
+	Next
+	FileClose ($MusicFOLDERS)
+EndFunc
 
 Func WeightedChoiceInit ()
 	;here we set up the arrays for songs:
@@ -411,7 +460,9 @@ Func FileSearch ($FileReadObj, $string)
 		Exit
 	Else
 		;MsgBox(0, "Read", $read)
-		If StringRegExp($FileReadObj, $string) Then
+		;can't use regexp since songs use special chars in regex
+		;StringRegExp($FileReadObj, $string)
+		If StringInStr ( $FileReadObj, $string) Then
 			Return True
 		Else
 			Return False

@@ -1,15 +1,13 @@
  Gatchaman Insight  - I n s i g h t _ Full Opening.mp3|0
 !!! - One Girl-One Boy.mp3|0
-#7 A Secret of the Moon (Planetes Original Sound Track Album 1).mp3|3|3
-$uchmo$ - $TAY TUNE [kissmenerdygirl bootleg EDIT].mp3|3|4
+#7 A Secret of the Moon (Planetes Original Sound Track Album 1).mp3|0
+$uchmo$ - $TAY TUNE [kissmenerdygirl bootleg EDIT].mp3|0
 ' Our Shop Has EVERYTHING !~..' _ Part 1.0 {{ PRECIOUS JADE WORKSHOP !! }} White Snake 2019.mp3|0
-'Are you hungry'.mp3|0
-'BUSHES OF LOVE' -- Extended Lyric Video.mp3|0
-'Calendula Requiem' by kanon x kanon.mp3|0
-'Expel the Chinese Communist Party, liberate Hong Kong!'.mp3|0
+'Are you hungry'.mp3|2|6
+'BUSHES OF LOVE' -- Extended Lyric Video.mp3|2|7
+'Calendula Requiem' by kanon x kanon.mp3|3|8
+'Expel the Chinese Communist Party, liberate Hong Kong!'.mp3|3|9
 'Gekka Reijin (月下麗人)' by Buck-Tick .mp3|0
-'Go Speed Racer Go' Music Video by Ali Dee.mp3|0
-'Iris' - The Goo Goo Dolls.mp3|0
 'Kirakira' Mawaru Penguindrum (Volume 1) OST.mp3|0
 'Mezame' by Yuki Kajiura.mp3|0
 'NOT THE FUTURE' -- Extended Lyric Video.mp3|0
@@ -978,6 +976,7 @@ Dear_McCracken_Official_Lyric_Video[Mp3Converter.net].mp3|0
 Death From Above - Freeze Me (Official Audio).mp3|0
 Death Grips - Get Got.mp3|0
 Death Note- L's Ideology EXTENDED.mp3|0
+Deca-Dence Opening Full -『Theater of Life』by Konomi Suzuki.mp3|0
 DECO_27 - 乙女解剖 feat. 初音ミク.mp3|0
 Deepsky-Ride.mp3|0
 deer has a good drink.mp3|0
@@ -4162,6 +4161,7 @@ Take Off.mp3|0
 Takeuchi Mariya - Plastic Love (Night Tempo 100% Pure Remastered).mp3|0
 Takuro Yoshida - Ningen Nante (Mechazawa humming song).mp3|0
 Tal Bachman - She's So High.mp3|0
+Talentless Nana - Opening Full『Broken Sky』by Miyu Tomita [ROM_KAN_ENG LYRICS].mp3|0
 Talk Spanish To Me.mp3|0
 tallgeese - Neat! 2.0.mp3|0
 Talmberg Castle Reprise [ingame].mp3|0
@@ -5915,5 +5915,6 @@ ______1412 ED WHITE of CRIME REVALCY.mp3|0
 ＵＳＥＤ ＴＯ  ＫＮＯＷ.mp3|0
 ＷＨＥＲＥ  ＡＭ  Ｉ  ＧＯＩＮＧ？.mp3|0
 ［PV］Just_Awake_English_verFear_and_Loathing_in_Las_Vegas[Mp3Converter.net].mp3|0
-［PV］SCANDAL 「Shoujo S」 HD.mp3|0
+［PV］SCANDAL 「Shoujo S」 HD.mp3|0'Go Speed Racer Go' Music Video by Ali Dee.mp3|0
+'Iris' - The Goo Goo Dolls.mp3|0
 ｢Moetron-Subs｣ Hatsune Miku - 'Two-Faced Lovers' PV (English Subs).mp3|0
