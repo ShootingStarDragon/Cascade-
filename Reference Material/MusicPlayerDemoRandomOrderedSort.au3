@@ -289,11 +289,19 @@ Func MusicListInit ($FileSourceGIVEN)
 			;MsgBox(0,"write this", UBound( $FileList ,1) -1)
 			$MusicFILE = FileOpen ("MusicList.txt", 1 + 256)
 			FileWrite ( $MusicFILE, $FileList[$x] & "|" & "0" & @CRLF )
-			MsgBox(0,"what is pos", FileGetPos($MusicFILE))
+			;MsgBox(0,"what is pos", FileGetPos($MusicFILE))
 			FileClose ($MusicFILE)
-			;GUICtrlCreateListViewItem ($FileList[$x] & "|" & "0" & "|" & $x, $MusicListView )
+			;reopen file again holy shit...
+			$MusicFILE = FileOpen ("MusicList.txt", 256)
+			$MusicArray = FileReadToArray($MusicFILE)
+			;_ArrayDisplay($MusicArray)
+			
+			$searchANS = _ArraySearch ($MusicArray, $FileList[$x] & "|" & 0,0,0,0,0,1,0,False)
+			;MsgBox(0,$FileList[$x], $searchANS &"|"& @error)
+			GUICtrlCreateListViewItem($FileList[$x] & "|" & "0" & "|" & $searchANS, $MusicListView )
+			FileClose ($MusicFILE)
 		Else
-			GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
+			GUICtrlSetData($Label9,($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
 		EndIf
 		
 	Next
