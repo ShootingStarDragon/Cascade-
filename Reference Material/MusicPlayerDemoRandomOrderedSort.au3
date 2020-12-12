@@ -7,15 +7,15 @@
 #include <Timers.au3>
 
 #comments-start
-
+make sure to update $CurrentSong and $CurrentSongOpen consistently!
 -> timer plans: use autoplay or at least init/register the timerID globally
 -=-=-=-
 
+;i keep rewriting to musicfolders.txt
 plan:
-
-;make sure on init not to add a blacklisted song to music.txt and to ListView
 -> prev and next buttons
 	prev and next can mess around with this ordering
+	;make sure nextchoice obeys the historylist
 -> search would be nice....
 -=-=-=-=-=-=-=-=--
 -> COMPATIBILITY WITH XSPF
@@ -87,7 +87,6 @@ Global $ZeroArray[1][2]
 	$ZeroArray[0][0] = "nil"
 Global $PosArray[1][2]
 	$PosArray[0][0] = "nil"
-;_ArrayDisplay($ZeroArray)
 ;history array:
 Global $HistoryArray[1]
 	$HistoryArray[0] = "nil"
@@ -123,6 +122,7 @@ GUISetState()
 ;set false ID
 Global $CurrentMusicCtrlID = -1
 $CurrentSongOpen = 0
+$CurrentSong = 0
 While 1
 	Switch GUIGetMsg()
 		Case $GUI_EVENT_CLOSE
@@ -130,7 +130,7 @@ While 1
 		Case $Label1
 			;if something is selected from listview, play:
 			;else say nothing selected
-			If 3+2 = 5 Then
+			If GUICtrlRead ( $MusicListView) Then
 				$CurrentSong = StringSplit(GUICtrlRead(GUICtrlRead ( $MusicListView)), "|")[1]
 				;SoundPlay ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & $CurrentSong)
 				
@@ -139,6 +139,7 @@ While 1
 				EndIf
 				
 				$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
+				;_ArrayDisplay($CurrentSongOpen)
 				_SoundPlay ( $CurrentSongOpen )
 				;set timer to play next song:
 
@@ -151,12 +152,66 @@ While 1
 				;append to history array:
 				If $HistoryArray[0] == "nil" Then
 					;replace 1st val
-					$HistoryArray[0] = $CurrentSong 
+					$HistoryArray[0] = $CurrentSong
 				Else
 					_ArrayAdd($HistoryArray, $CurrentSong)
 				EndIf
 			Else
 				GUICtrlSetData ( $Label9, "No song selected!")
+			EndIf
+		Case $Label2
+			;find prev song index
+			$prevsongIndex = _ArraySearch ($HistoryArray, $CurrentSong ,0,0,0,0,1,0,False)
+			;stop current song
+			If $prevsongIndex <> 0 Then
+				;MsgBox(0,"",$HistoryArray[$prevsongIndex])
+				;$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $HistoryArray[$prevsongIndex] )
+				_SoundStop($CurrentSongOpen)
+				;set current song as the prev song, and DONT add to history queue
+				$CurrentSong = $HistoryArray[$prevsongIndex -1]
+				$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
+				;play prev song
+				_SoundPlay($CurrentSongOpen)
+				GUICtrlSetData ( $Label9, "Playing " & $CurrentSong)
+			Else
+				GUICtrlSetData ( $Label9, "No previous history detected.")
+			EndIf
+		Case $Label3
+			;check if you're at end of history THEN pick one or history is nil
+			$prevsongIndex = _ArraySearch ($HistoryArray, $CurrentSong ,0,0,0,0,0,0,False)
+			;make sure ur at end of queue
+			;MsgBox(0,"tests", $prevsongIndex &"|"& UBound($HistoryArray,1) - 1 &"|"& String($prevsongIndex == UBound($HistoryArray,1)) )
+			If $prevsongIndex == UBound($HistoryArray,1) -1 or $HistoryArray[0] == "nil" Then
+				_SoundStop($CurrentSongOpen)
+				;choose new song:
+				$CurrentSong = WeightedChoice ()
+				;request new song
+				$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
+				;play song
+				_SoundPlay ( $CurrentSongOpen )
+				GUICtrlSetData ( $Label9, "Playing B" & $CurrentSong)
+				;add to history array
+				If $HistoryArray[0] == "nil" Then
+					;replace 1st val
+					$HistoryArray[0] = $CurrentSong
+				Else
+					_ArrayAdd($HistoryArray, $CurrentSong)
+				EndIf
+			Else
+				_SoundStop($CurrentSongOpen)
+				$CurrentSong = $HistoryArray[$prevsongIndex+1]
+				;play the next song in history
+				$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
+				;play song
+				_SoundPlay ( $CurrentSongOpen )
+				GUICtrlSetData ( $Label9, "Playing C" & $CurrentSong)
+				;add to history array
+				;If $HistoryArray[0] == "nil" Then
+				;	;replace 1st val
+				;	$HistoryArray[0] = $CurrentSong
+				;Else
+				;	_ArrayAdd($HistoryArray, $CurrentSong)
+				;EndIf
 			EndIf
 		Case $Label4
 			;SoundPlay("nosound", 0)
@@ -164,6 +219,7 @@ While 1
 				_SoundStop ( $CurrentSongOpen )
 			EndIf
 			$CurrentSongOpen = 0
+			$CurrentSong == 0
 		Case $Label5
 			$number = StringSplit( GUICtrlRead ($Label5), ",") [2] + 5
 			SoundSetWaveVolume ( $number )
@@ -175,14 +231,22 @@ While 1
 			GUICtrlSetData ( $Label5, "VolUp," & $number )
 			GUICtrlSetData ( $Label6, "VolDown," & $number )
 		Case $Label8
-			;MsgBox(0,"??",_GUICtrlListView_GetSelectedIndices ( $MusicListView ))
+			_ArrayDisplay($HistoryArray)
+			;MsgBox(0,"msgboxlabel8",WeightedChoice ())
 			;WeightedChoice()
 			;_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
 			
 			;MsgBox(0,"???", $MusicFILEREAD)
-			_ArrayDisplay($NegArray)
-			_ArrayDisplay($ZeroArray)
-			_ArrayDisplay($PosArray)
+			;$MusicFILEBLACKLIST = FileOpen ("blacklistfileOPEN.txt", 256)
+			;$MusicFILEBLACKLISTREAD = FileRead ($MusicFILEBLACKLIST)
+			;;MsgBox(0,"",$MusicFILEBLACKLISTREAD)
+			;MsgBox(0,"",FileSearch ($MusicFILEBLACKLISTREAD, "#7 A Secret of the Moon (Planetes Original Sound Track Album 1).mp3"))
+			;;MsgBox(0,"",FileSearch ($MusicFILEBLACKLISTREAD, "Gatchaman Insight  - I n s i g h t _ Full Opening.mp3"))
+			;FileClose($MusicFILEBLACKLIST)
+			;_ArrayDisplay($NegArray)
+			;_ArrayDisplay($ZeroArray)
+			;_ArrayDisplay($PosArray)
+			
 			;GUICtrlSetData ( $Label9, _SoundStatus ( $CurrentSongOpen ) == 0)
 			;GUICtrlSetData ( $Label9, IsString(_SoundStatus ( $CurrentSongOpen )))
 			;GUICtrlSetData ( $Label9, _SoundStatus ( $CurrentSongOpen ))
@@ -276,7 +340,6 @@ While 1
 			MusicListInit(FileSelectFolder("Select Music Folder", ""))
 		Case $label13
 			;blacklist filter remove song from list and ???	
-			
 			$SelectedSongID = GUICtrlRead($MusicListView)
 			$SelectedSong = GUICtrlRead(GUICtrlRead($MusicListView))
 			If GUICtrlRead($MusicListView) > 0 Then
@@ -292,13 +355,13 @@ While 1
 				;from the right neg/zero/pos array
 				Switch $currLikeVAL
 					Case $currLikeVAL < 0
-						$OldIndex = _ArraySearch ($NegArray, $SongName ,0,0,0,0,1,0,False)
+						$OldIndex = _ArraySearch ($NegArray,$SongName,0,0,0,0,1,0,False)
 						_ArrayDelete ($NegArray, $OldIndex )
 					Case $currLikeVAL = 0
-						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
+						$OldIndex = _ArraySearch ($ZeroArray,$SongName,0,0,0,0,1,0,False)
 						_ArrayDelete ($ZeroArray, $OldIndex )
 					Case $currLikeVAL > 0
-						$OldIndex = _ArraySearch ($PosArray, $SongName ,0,0,0,0,1,0,False)
+						$OldIndex = _ArraySearch ($PosArray,$SongName,0,0,0,0,1,0,False)
 						_ArrayDelete ($PosArray, $OldIndex )
 				EndSwitch
 				;delete from music.txt
@@ -313,14 +376,14 @@ While 1
 				;search through array and delete line
 				$SearchItemIndex = _ArraySearch($MusicArray, $SearchItem,0,0,0,0,1,0,False)
 				MsgBox(0,"?", $SearchItemIndex & "|" & $SearchItem)
-				_ArrayDelete ($MusicArray, $SearchItemIndex )
+				_ArrayDelete($MusicArray, $SearchItemIndex )
 				_ArrayDisplay($MusicArray)
 				FileClose ($MusicFILE)
 				;write to file
 				$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
 				For $y = 0 To UBound($MusicArray, 1)-1 
 					FileWrite ( $MusicFILE, $MusicArray[$y] & @CRLF )
-					GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
+					GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $SelectedSong)
 				Next
 				FileClose ($MusicFILE)
 				;add to blacklist.txt
@@ -353,7 +416,11 @@ Func MusicListInit ($FileSourceGIVEN)
 		$MusicFILEREAD = FileRead ($MusicFILE)
 		;MsgBox(0,"???", FileSearch ($MusicFILEREAD, " Gatchaman Insight  - I n s i g h t _ Full Opening.mp3"))
 		;MsgBox(0,"??", $FileList[$x] & "|" & FileSearch ($MusicFILEREAD, $FileList[$x]))
-		If FileSearch ($MusicFILEREAD, $FileList[$x]) == False Then
+		$MusicFILEBLACKLIST = FileOpen ("blacklistfileOPEN.txt", 256)
+		$MusicFILEBLACKLISTREAD = FileRead ($MusicFILEBLACKLIST)
+		;also don't add songs in the blacklist:
+		If FileSearch ($MusicFILEREAD, $FileList[$x]) == False and FileSearch ($MusicFILEBLACKLISTREAD, $FileList[$x]) == False Then
+			;MsgBox(0,"?",$FileList[$x] &"|"& FileSearch ($MusicFILEBLACKLISTREAD, $FileList[$x]))
 			FileClose ($MusicFILE)
 			GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
 			;MsgBox(0,"write this", $FileList[$x] & "|" & "0" & @CRLF )
@@ -374,7 +441,7 @@ Func MusicListInit ($FileSourceGIVEN)
 		Else
 			GUICtrlSetData($Label9,($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
 		EndIf
-		
+		FileClose ($MusicFILEBLACKLIST)
 	Next
 	FileClose ($MusicFOLDERS)
 EndFunc
@@ -466,6 +533,7 @@ Func WeightedChoice ()
 			If $NegArray[$NegTest][0] == "nil" Then
 				Return WeightedChoiceFail()
 			Else
+				;MsgBox(0,"bb",$NegArray[$NegTest][0])
 				Return $NegArray[$NegTest][0]
 			EndIf
 			
@@ -477,6 +545,7 @@ Func WeightedChoice ()
 			If $ZeroArray[$ZeroTest][0] == "nil" Then
 				Return WeightedChoiceFail()
 			Else
+				;MsgBox(0,"bc",$ZeroArray[$ZeroTest][0])
 				Return $ZeroArray[$ZeroTest][0]
 			EndIf
 			
@@ -515,16 +584,25 @@ Func WeightedChoice ()
 				;;;_ArrayDisplay($ValidLikeArray)
 				;;;MsgBox(0, "VALIDLIKEPICK", $ValidLikeArray[$LikeTest])
 				If $ValidLikeArray[$LikeTest] == "nil" Then
-					$TheAns = $PosArray[Random(0,UBound($PosArray,1)-1,1)][0]
-					;;;MsgBox(0, "VALIDLIKEPICK", $TheAns)
-					Return $TheAns
+					$randPick = Random(0,UBound($PosArray,1)-1,1)
+					;MsgBox(0, "VALIDLIKEPICKb", $randPick)
+					;_ArrayDisplay($PosArray)
+					$TheAns = $PosArray[$randPick][0]
+					;MsgBox(0, "VALIDLIKEPICK", $TheAns)
+					If $TheAns == "nil" or $TheAns == "0" Then
+						;MsgBox(0, "VALIDLIKEPICKz", "nothing")
+						Return WeightedChoiceFail()
+					Else
+						;MsgBox(0, "VALIDLIKEPICKz", $TheAns)
+						Return $TheAns
+					EndIf
 				Else
+					;MsgBox(0, "VALIDLIKEPICKa", $ValidLikeArray[$LikeTest])
 					Return $ValidLikeArray[$LikeTest]
 				EndIf
-				
-				
 			EndIf
 		Next
+		Return WeightedChoiceFail()
 	EndIf
 EndFunc
 
@@ -532,6 +610,7 @@ Func WeightedChoiceFail()
 	;if u get a nil answer (aka no songs in that category)
 	;just return random song in listview
 	$SongName = _GUICtrlListView_GetItemText($MusicListView, Random (0, _GUICtrlListView_GetItemCount($MusicListView) -1 ,1), 0)
+	;MsgBox(0,"??", "fail invoked")
 	return $SongName
 EndFunc 
 
@@ -550,6 +629,7 @@ Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
 	EndIf
 EndFunc
 
+;HEADS UP FILESEARCH NEEDS the fileopened file to be FILEREAD!
 Func FileSearch ($FileReadObj, $string)
 	If @error = -1 Then
 		MsgBox(0, "Error", "File not read")
