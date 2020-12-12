@@ -10,12 +10,10 @@
 
 -> timer plans: use autoplay or at least init/register the timerID globally
 -=-=-=-
-;on init the -,0,+ arrays are nil and then -/+ buttons don't clear nil
+
 plan:
--> blacklist filter remove song from list and ???	
-	;remove from listview
-	;from the right neg/zero/pos array
-	;from music.txt
+
+;make sure on init not to add a blacklisted song to music.txt and to ListView
 -> prev and next buttons
 	prev and next can mess around with this ordering
 -> search would be nice....
@@ -33,8 +31,13 @@ find all playlists with this song (so xspf compatible)
 >can play music using xspf files
 
 		
-
-
+-=-=-=-
+-> blacklist filter being written to multiple times?
+-> blacklist filter remove song from list and ???	
+	;remove from listview
+	;from the right neg/zero/pos array
+	;from music.txt
+;on init the -,0,+ arrays are nil and then -/+ buttons don't clear nil
 
 -> autoplay
 -> plan out random walk (default is this autoplay)
@@ -197,10 +200,10 @@ While 1
 				If $currLike <> "" Then
 					;set data on ListView
 					GUICtrlSetData ( $SelectedSongID, "|" & Int($currLike) + 1)
-					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & Int($currLike) + 1 & "|" & $RowNum, True)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & Int($currLike) + 1, True)
 				Else
 					GUICtrlSetData ( $SelectedSongID, "|" & 1)
-					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & 1 & "|" & $RowNum, True)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & 1 , True)
 				EndIf
 				;here if we reach certain thresholds we move the file from Neg,Zero, and Pos array to the right array:
 				;set old array
@@ -210,9 +213,9 @@ While 1
 					Case $currLike + 1 = 0
 						If $ZeroArray[0][0] == "nil" Then
 							$ZeroArray[0][0] = $SongName
-							$ZeroArray[0][1] = $currLike
+							$ZeroArray[0][1] = $currLike+1
 						Else
-							_ArrayAdd($ZeroArray, $SongName & "|" & $currLike)
+							_ArrayAdd($ZeroArray, $SongName & "|" & $currLike+1)
 						EndIf
 						$OldIndex = _ArraySearch ($NegArray, $SongName ,0,0,0,0,1,0,False)
 						_ArrayDelete ($NegArray, $OldIndex )
@@ -220,9 +223,9 @@ While 1
 					Case $currLike + 1 > 0 and $currLike == 0
 						If $PosArray[0][0] == "nil" Then
 							$PosArray[0][0] = $SongName
-							$PosArray[0][1] = $currLike
+							$PosArray[0][1] = $currLike+1
 						Else
-							_ArrayAdd($PosArray, $SongName & "|" & $currLike)
+							_ArrayAdd($PosArray, $SongName & "|" & $currLike+1)
 						EndIf
 						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
 						_ArrayDelete ($ZeroArray, $OldIndex )
@@ -240,10 +243,10 @@ While 1
 				If $currLike <> "" Then
 					;set data on ListView
 					GUICtrlSetData ( $SelectedSongID, "|" & Int($currLike) - 1)
-					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & Int($currLike) - 1 & "|" & $RowNum, True)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & Int($currLike) - 1, True)
 				Else
 					GUICtrlSetData ( $SelectedSongID, "|" & -1)
-					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & - 1 & "|" & $RowNum, True)
+					_FileWriteToLine("MusicList.txt", $RowNum,  StringSplit(GUICtrlRead ( $SelectedSongID), "|")[1] & "|" & - 1, True)
 				EndIf
 				
 				Switch $currLike
@@ -251,9 +254,9 @@ While 1
 					Case $currLike - 1 = 0
 						If $ZeroArray[0][0] == "nil" Then
 							$ZeroArray[0][0] = $SongName
-							$ZeroArray[0][1] = $currLike
+							$ZeroArray[0][1] = $currLike-1
 						Else
-							_ArrayAdd($ZeroArray, $SongName & "|" & $currLike)
+							_ArrayAdd($ZeroArray, $SongName & "|" & $currLike-1)
 						EndIf
 						$OldIndex = _ArraySearch ($PosArray, $SongName ,0,0,0,0,1,0,False)
 						_ArrayDelete ($PosArray, $OldIndex )
@@ -261,9 +264,9 @@ While 1
 					Case $currLike - 1 < 0 and $currLike == 0
 						If $NegArray[0][0] == "nil" Then
 							$NegArray[0][0] = $SongName
-							$NegArray[0][1] = $currLike
+							$NegArray[0][1] = $currLike-1
 						Else
-							_ArrayAdd($NegArray, $SongName & "|" & $currLike)
+							_ArrayAdd($NegArray, $SongName & "|" & $currLike-1)
 						EndIf
 						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
 						_ArrayDelete ($ZeroArray, $OldIndex )
@@ -277,11 +280,15 @@ While 1
 			$SelectedSongID = GUICtrlRead($MusicListView)
 			$SelectedSong = GUICtrlRead(GUICtrlRead($MusicListView))
 			If GUICtrlRead($MusicListView) > 0 Then
-				MsgBox(0,"", StringSplit(GUICtrlRead(GUICtrlRead($MusicListView),1), "|")[2])
+				;MsgBox(0,"", StringSplit(GUICtrlRead(GUICtrlRead($MusicListView),1), "|")[2])
 				$SongName = StringSplit(GUICtrlRead(GUICtrlRead($MusicListView),1), "|")[1]
 				$currLikeVAL = StringSplit(GUICtrlRead(GUICtrlRead($MusicListView),1), "|")[2]
 				;remove from listview
 				GUICtrlDelete($SelectedSongID)
+				
+				;construct the arrayline in music.txt (musicname | likeval) to search for
+				$SearchItem = $SongName & "|" & $currLikeVAL
+				
 				;from the right neg/zero/pos array
 				Switch $currLikeVAL
 					Case $currLikeVAL < 0
@@ -289,12 +296,37 @@ While 1
 						_ArrayDelete ($NegArray, $OldIndex )
 					Case $currLikeVAL = 0
 						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
-						_ArrayDelete ($NegArray, $OldIndex )
+						_ArrayDelete ($ZeroArray, $OldIndex )
 					Case $currLikeVAL > 0
 						$OldIndex = _ArraySearch ($PosArray, $SongName ,0,0,0,0,1,0,False)
-						_ArrayDelete ($NegArray, $OldIndex )
+						_ArrayDelete ($PosArray, $OldIndex )
 				EndSwitch
-				;from music.txt
+				;delete from music.txt
+				;fileopen		;in read mode
+				$MusicFILE = FileOpen ("MusicList.txt", 256)
+				;read to array
+				$MusicArray = FileReadToArray ( $MusicFILE )
+				
+				;_ArrayDisplay($MusicArray)
+				;find the line#
+				;https://www.autoitscript.com/forum/topic/60817-file-delete-line/
+				;search through array and delete line
+				$SearchItemIndex = _ArraySearch($MusicArray, $SearchItem,0,0,0,0,1,0,False)
+				MsgBox(0,"?", $SearchItemIndex & "|" & $SearchItem)
+				_ArrayDelete ($MusicArray, $SearchItemIndex )
+				_ArrayDisplay($MusicArray)
+				FileClose ($MusicFILE)
+				;write to file
+				$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
+				For $y = 0 To UBound($MusicArray, 1)-1 
+					FileWrite ( $MusicFILE, $MusicArray[$y] & @CRLF )
+					GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
+				Next
+				FileClose ($MusicFILE)
+				;add to blacklist.txt
+				$blacklistfileOPEN = FileOpen("blacklistfileOPEN.txt", 1 + 256)
+				FileWrite ( $blacklistfileOPEN, $SongName & "|" & $currLikeVAL & @CRLF)
+				FileClose ($blacklistfileOPEN)
 			EndIf
 	EndSwitch
 WEnd
@@ -431,13 +463,23 @@ Func WeightedChoice ()
 			$NegTest = Random(0,UBound($NegArray, 1)-1,1)
 			;MsgBox(0, "NegArrayVals", $NegTest )
 			;_ArrayDisplay($NegArray)
-			Return $NegArray[$NegTest][0]
+			If $NegArray[$NegTest][0] == "nil" Then
+				Return WeightedChoiceFail()
+			Else
+				Return $NegArray[$NegTest][0]
+			EndIf
+			
 		Else
 			;pick neutral song ( likeval of 0)
 			;_ArrayDisplay($ZeroArray)
 			$ZeroTest = Random(0,UBound($ZeroArray, 1)-1,1)
 			;MsgBox(0, "ZeroArrayVals", $ZeroTest )
-			Return $ZeroArray[$ZeroTest][0]
+			If $ZeroArray[$ZeroTest][0] == "nil" Then
+				Return WeightedChoiceFail()
+			Else
+				Return $ZeroArray[$ZeroTest][0]
+			EndIf
+			
 		EndIf 
 	Else
 		;old song
@@ -485,6 +527,13 @@ Func WeightedChoice ()
 		Next
 	EndIf
 EndFunc
+
+Func WeightedChoiceFail()
+	;if u get a nil answer (aka no songs in that category)
+	;just return random song in listview
+	$SongName = _GUICtrlListView_GetItemText($MusicListView, Random (0, _GUICtrlListView_GetItemCount($MusicListView) -1 ,1), 0)
+	return $SongName
+EndFunc 
 
 ;HEADS UP FUNCTION DIES IF IT ISNT GIVEN 4 ARGS! (when triggered by timer funcs)
 Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
