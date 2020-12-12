@@ -79,6 +79,7 @@ $Label13 = GUICtrlCreateButton("blacklist", 0, 220, 81, 41)
 
 Global $MusicListView = GUICtrlCreateListView ("Title|Like Value|Row #", 183, 2, 400,200 )
 _GUICtrlListView_SetExtendedListViewStyle($MusicListView, BitOR($LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT));$LVS_EX_GRIDLINES
+_GUICtrlListView_SetColumnWidth ( $MusicListView, 0, 200 )
 
 ;init sorted Arrays
 Global $NegArray[1][2] 
@@ -99,7 +100,7 @@ If FileExists("MusicList.txt") Then
 	Global $MusicArray[$MusicCount][3]
 	
 	;$MusicCount
-	For $x = 0 to 15 -1
+	For $x = 0 to $MusicCount -1
 		;read line
 		$NextLine = FileReadLine ($MusicFILE)
 		$SongName = StringSplit($NextLine, "|")[1]
