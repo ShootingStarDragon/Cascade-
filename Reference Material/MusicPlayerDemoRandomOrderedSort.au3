@@ -108,9 +108,17 @@ Func MusicListViewInit($LVhnd)
 	If FileExists("MusicList.txt") Then
 		$MusicFILE = FileOpen ("MusicList.txt")
 		
+		;clear previous music arrays:
+		;orig array: 
+		Global $MusicArray[1]
+			$MusicArray[0] = "nil"
+		;copy array
+		Global $MusicArrayCopy[1]
+			$MusicArrayCopy[0] = "nil"
+		
 		;make music array:
 		$MusicCount = _FileCountLines("MusicList.txt")
-		Global $MusicArray[$MusicCount][3]
+		;Global $MusicArray[$MusicCount][3]
 		
 		;$MusicCount
 		For $x = 0 to 15 -1
@@ -120,9 +128,19 @@ Func MusicListViewInit($LVhnd)
 			$SongLikes = StringSplit($NextLine, "|")[2]
 
 			;add to array
-			$MusicArray[$x][0] = $SongName
+			If $MusicArray[0] == "nil" Then
+				$MusicArray[0] = $SongName
+			Else
+				_ArrayAdd($MusicArray, $SongName)
+			EndIf
+			
 			;add to listview:
 			GUICtrlCreateListViewItem ($SongName & "|" & $SongLikes & "|" & $x+1, $LVhnd)
+			If $MusicArrayCopy[0] == "nil" Then
+				$MusicArrayCopy[0] = $SongName
+			Else
+				_ArrayAdd($MusicArrayCopy, $SongName)
+			EndIf
 			;set data
 			GUICtrlSetData ( $Label9, ($x/$MusicCount)*100  & '%' & " done" & ", " & "Working on " & $SongName)
 		Next
@@ -158,7 +176,7 @@ While 1
 				;_ArrayDisplay($CurrentSongOpen)
 				_SoundPlay ( $CurrentSongOpen )
 				
-				MsgBox(0,"timerlength", $CurrentSong)
+				;MsgBox(0,"timerlength", $CurrentSong)
 				;set timer to play next song:
 				If $AutoplayTimer == 0 Then
 					$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
@@ -302,6 +320,7 @@ While 1
 			GUICtrlSetData ( $Label5, "VolUp," & $number )
 			GUICtrlSetData ( $Label6, "VolDown," & $number )
 		Case $Label8
+			_ArrayDisplay($MusicArrayCopy)
 			;$currentd = _SoundOpen ("C:\Users\RaptorPatrolCore\Downloads\01 - Overfly ~TV size~.mp3")
 			$currentd = _SoundOpen ("C:\Users\RaptorPatrolCore\Downloads\01.crossing field.mp3")
 			;_ArrayDisplay($currentd)
@@ -751,16 +770,64 @@ Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 						_GUICtrlListView_DeleteAllItems ( $MusicListView )
 						MusicListViewInit($MusicListView)
 					Else
+						#comments-start
+						;if i make an original ghost listview, i need to assign the var on init and on reinit
+						;if i make an array, i'll have to track changes again.... fuck there are so many
+						i think i write abstractl enough that arrayclone will work
+						
+						how to clear data but still remember w/o reading file repeatedly?
+						;clear it
+						;then assemble again
+						;problem: i can only do this for one search. the next search will search this neutered list.
+						
+						
+						;problem 1:						
+						;successive filters are not good:
+							OK:
+							;ex: search abcd -> abcde  
+							NOT OK:
+							;ex: search abcd -> fghe
+							;i can stop this possibly by resetting the search every time the search string loses 1 character:
+							aka
+							search: abcde -> abcd (refresh search)
+
+							
 						;if not, then filter out
-						MsgBox(0,"?",GUICtrlRead($label14) == "")
+						
+						
+						plan: copy filenames into array and have it be init at the same time i call musivlistviewinit
+						then i can filter by songname AND when reading or writing i take info from MusicList.txt AKA regenerate the row
+						need: 
+							songname 
+							likes
+							line in text file
+						
+						
+						#comments-end
+						;MsgBox(0,"?",GUICtrlRead($label14))
 						;redraw listview with search text filter with partial search:
-						For $x = 0 to _GUICtrlListView_GetItemCount($MusicListView) -1 
-							;filter with stringinstr
-							If Then
-								;delete line
-								;???
-							EndIf
-						Next
+						_GUICtrlListView_DeleteAllItems ( $MusicListView )
+						$searchText = GUICtrlRead($label14)
+						;_ArrayDisplay($MusicArrayCopy)
+						$FoundArray = _ArrayFindAll($MusicArrayCopy,$searchText,0,0,0,1,0,False)
+						;MsgBox(0,"arraysize",UBound($FoundArray,1))
+						;MsgBox(0,"array",$MusicArrayCopy[$FoundArray[0]])
+						;_ArrayDisplay($FoundArray)
+						If $FoundArray <> -1 Then
+							For $y = 0 to UBound($FoundArray,1)-1
+								;$FoundArray[$y] = index of song name in $MusicArrayCopy
+								$SongCandidateName = $MusicArrayCopy[$FoundArray[$y]]
+								;fileopen in read mode
+								$MusicFILE = FileOpen ("MusicList.txt", 256)
+								;read to array
+								$MusicArrayOrigin = FileReadToArray ( $MusicFILE )
+								;Search in file. 1 in $iCompare should be a partial search...:
+								$SearchItemIndex = _ArraySearch($MusicArrayOrigin, $SongCandidateName,0,0,0,1,1,0,False)
+								FileClose ($MusicFILE)
+								;generate listview line:
+								GUICtrlCreateListViewItem ($SongCandidateName & "|" & StringSplit($MusicArrayOrigin[$SearchItemIndex], "|")[2] & "|" & $SearchItemIndex+1, $MusicListView)
+							Next
+						EndIf
 					EndIf
             EndSwitch
     EndSwitch
