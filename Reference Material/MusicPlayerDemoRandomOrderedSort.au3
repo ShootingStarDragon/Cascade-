@@ -15,9 +15,19 @@ Just use _GuiCtrlIPAddress_... functions example:
 -=-=-
 make sure to update $CurrentSong and $CurrentSongOpen consistently!
 -> timer plans: use autoplay or at least init/register the timerID globally
-;i keep rewriting to musicfolders.txt
--=-=-=-
+
+-=-=-=-=-=-=-=-=--
 plan:
+somehow i am duplicating -1 lines...
+this line fails probably when you add to zeroarray then remove it again but it's empty. it was complaining about improper bounds
+	If $ZeroArray[$ZeroTest][0] == "nil" Then
+
+
+sometimes autoplay doesn't trigger immediately
+negative like value is too common
+
+;i keep rewriting to musicfolders.txt (aka accumulate redundant info)
+
 faster init
 i have a sorted file list...
 probably use an array read/write once at the end
@@ -121,28 +131,25 @@ Func MusicListViewInit($LVhnd)
 		Global $MusicArrayCopy[1]
 			$MusicArrayCopy[0] = "nil"
 		
-		$MusicFILEArray = FileReadToArray ( $MusicFILE )
+		$MusicFILEArray = FileReadToArray($MusicFILE)
 		
 		;$MusicCount
+		;ARRAYADD IS SLOW, REDIM TO MaxLike
+		;ReDim $aArray[subscript 1]...[subscript n]
+		ReDim $MusicArray[UBound($MusicFILEArray,1)]
+		ReDim $MusicArrayCopy[UBound($MusicFILEArray,1)]
+		
 		For $x = 0 to UBound($MusicFILEArray,1)-1
 			;read line
 			$SongName = StringSplit($MusicFILEArray[$x], "|")[1]
 			$SongLikes = StringSplit($MusicFILEArray[$x], "|")[2]
 
-			;add to array
-			If $MusicArray[0] == "nil" Then
-				$MusicArray[0] = $SongName
-			Else
-				_ArrayAdd($MusicArray, $SongName)
-			EndIf
+			$MusicArray[$x] = $SongName
+			$MusicArrayCopy[$x] = $SongName
 			
 			;add to listview:
 			GUICtrlCreateListViewItem ($SongName & "|" & $SongLikes & "|" & $x+1, $LVhnd)
-			If $MusicArrayCopy[0] == "nil" Then
-				$MusicArrayCopy[0] = $SongName
-			Else
-				_ArrayAdd($MusicArrayCopy, $SongName)
-			EndIf
+			
 			;set data
 			GUICtrlSetData ( $Label9, ($x/UBound($MusicFILEArray,1))*100  & '%' & " done" & ", " & "Working on " & $SongName)
 		Next
@@ -220,7 +227,7 @@ While 1
 					$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , $AutoplayTimer)
 				EndIf 
 
-				GUICtrlSetData ( $Label9, "Playing Line #: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) & " " & $CurrentSong)
+				GUICtrlSetData ( $Label9, "Playing Line #A: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & $CurrentSong)
 				;set the ctrl ID because I need to know for +1 -1
 				Global $CurrentMusicCtrlID = GUICtrlRead($MusicListView)
 				
@@ -247,7 +254,7 @@ While 1
 				$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
 				;play prev song
 				_SoundPlay($CurrentSongOpen)
-				GUICtrlSetData ( $Label9, "Playing Line #: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) & " " & $CurrentSong)
+				GUICtrlSetData ( $Label9, "Playing Line #B: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & $CurrentSong)
 			Else
 				GUICtrlSetData ( $Label9, "No previous history detected.")
 			EndIf
@@ -265,7 +272,7 @@ While 1
 				$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
 				;play song
 				_SoundPlay ( $CurrentSongOpen )
-				GUICtrlSetData ( $Label9, "Playing Line #: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) & " " & $CurrentSong)
+				GUICtrlSetData ( $Label9, "Playing Line #C: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & $CurrentSong)
 				;add to history array
 				If $HistoryArray[0] == "nil" Then
 					;replace 1st val
@@ -280,7 +287,7 @@ While 1
 				$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
 				;play song
 				_SoundPlay ( $CurrentSongOpen )
-				GUICtrlSetData ( $Label9, "Playing Line #: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) & " " & $CurrentSong)
+				GUICtrlSetData ( $Label9, "Playing Line #D: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) & " " & $CurrentSong)
 				;add to history array
 				;If $HistoryArray[0] == "nil" Then
 				;	;replace 1st val
@@ -308,10 +315,11 @@ While 1
 					If $currLike <> "" Then
 						;set data on ListView
 						_GUICtrlListView_SetItemText ( $MusicListView, $SelectedSongID, Int($currLike) - 1 , 1 )
-						_FileWriteToLine("MusicList.txt", $RowNum,  $SongName & "|" & Int($currLike) - 1, True)
+						; i suspect i need to $RowNum+1 since i get the info from the listview which is 0-indexed
+						_FileWriteToLine("MusicList.txt", $RowNum+1,  $SongName & "|" & Int($currLike) - 1, True)
 					Else
 						_GUICtrlListView_SetItemText ( $MusicListView, $SelectedSongID, - 1 , 1 )
-						_FileWriteToLine("MusicList.txt", $RowNum,  $SongName & "|" & - 1, True)
+						_FileWriteToLine("MusicList.txt", $RowNum+1,  $SongName & "|" & - 1, True)
 					EndIf
 					
 					Switch $currLike
@@ -367,7 +375,7 @@ While 1
 			;MsgBox(0,"", @error == 1)
 			;_SoundPlay($currentd)
 			;_SoundPlay(_RPCSoundOpen ("C:\Users\RaptorPatrolCore\Downloads\01.crossing field.mp3" ))
-			;_ArrayDisplay($HistoryArray)
+			
 			;MsgBox(0,"msgboxlabel8",_ArrayToString ( (_GUICtrlListView_GetItemTextArray ( $MusicListView , 0))))
 			;WeightedChoice()
 			;_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
@@ -379,9 +387,10 @@ While 1
 			;MsgBox(0,"",FileSearch ($MusicFILEBLACKLISTREAD, "#7 A Secret of the Moon (Planetes Original Sound Track Album 1).mp3"))
 			;;MsgBox(0,"",FileSearch ($MusicFILEBLACKLISTREAD, "Gatchaman Insight  - I n s i g h t _ Full Opening.mp3"))
 			;FileClose($MusicFILEBLACKLIST)
-			;_ArrayDisplay($NegArray)
-			;_ArrayDisplay($ZeroArray)
-			;_ArrayDisplay($PosArray)
+			_ArrayDisplay($HistoryArray)
+			_ArrayDisplay($NegArray)
+			_ArrayDisplay($ZeroArray)
+			_ArrayDisplay($PosArray)
 			
 			;GUICtrlSetData ( $Label9, _SoundStatus ( $CurrentSongOpen ) == 0)
 			;GUICtrlSetData ( $Label9, IsString(_SoundStatus ( $CurrentSongOpen )))
@@ -429,6 +438,11 @@ While 1
 						EndIf
 						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
 						_ArrayDelete ($ZeroArray, $OldIndex )
+					;keep going positive, and modify PosArray as fitting
+					Case $currLike > 1
+						;find the index in PosArray and +1 it
+						$PosIndex = _ArraySearch ($PosArray, $SongName ,0,0,0,0,1,0,False)
+						$PosArray[$PosIndex][1] = $currLike+1
 				EndSwitch
 			EndIf
 		Case $Label12
@@ -470,6 +484,10 @@ While 1
 						EndIf
 						$OldIndex = _ArraySearch ($ZeroArray, $SongName ,0,0,0,0,1,0,False)
 						_ArrayDelete ($ZeroArray, $OldIndex )
+					Case $currLike < -1
+						;find the index in PosArray and +1 it
+						$NegIndex = _ArraySearch ($NegArray, $SongName ,0,0,0,0,1,0,False)
+						$NegArray[$NegIndex][1] = $currLike-1
 				EndSwitch
 			EndIf
 		Case $Label7
@@ -519,7 +537,7 @@ While 1
 				$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
 				For $y = 0 To UBound($MusicArray, 1)-1 
 					FileWrite ( $MusicFILE, $MusicArray[$y] & @CRLF )
-					GUICtrlSetData ( $Label9, ($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $SelectedSong)
+					GUICtrlSetData ( $Label9, ($y/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $SelectedSong)
 				Next
 				FileClose ($MusicFILE)
 				;add to blacklist.txt
@@ -759,7 +777,7 @@ Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
 		;randomly pick the next song
 		$CurrentSong = WeightedChoice()
 		$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & $CurrentSong )
-		GUICtrlSetData ( $Label9, "Autoplaying. Line #: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) & " " & StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & $CurrentSong)
+		GUICtrlSetData ( $Label9, "Autoplaying. Line #E: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & $CurrentSong)
 		_SoundPlay ( $CurrentSongOpen )
 		;set the timer again to songlength + 500 miliseconds
 		;_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , AutoPlay )
