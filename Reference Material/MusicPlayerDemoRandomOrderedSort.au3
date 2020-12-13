@@ -17,7 +17,8 @@ make sure to update $CurrentSong and $CurrentSongOpen consistently!
 -> timer plans: use autoplay or at least init/register the timerID globally
 -=-=-=-=-=-=-=-=--
 plan:
-neg/zero/ and pos arrays are not init if u just press play
+clickable progress bar
+neg/zero/ and pos arrays are not init if u just press play (there are 2 init, so maybe they are not init in the folder init and are ok in the 2nd engage? another thing too is they are probably init in "next" button)
 
 faster init
 	i have a sorted file list...
@@ -225,7 +226,7 @@ While 1
 				If $AutoplayTimer == 0 Then
 					$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
 				Else
-					$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , $AutoplayTimer)
+					$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 ,"", $AutoplayTimer)
 				EndIf 
 
 				GUICtrlSetData ( $Label9, "Playing Line #A: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & $CurrentSong)
@@ -302,7 +303,7 @@ While 1
 			If $AutoplayTimer == 0 Then
 				$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
 			Else
-				$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , $AutoplayTimer)
+				$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 ,"", $AutoplayTimer)
 			EndIf 
 			If UBound($HistoryArray,1) > 1 and $HistoryArray[0] <> "nil" Then
 				$SelectedSongID = _GUICtrlListView_FindInText ( $MusicListView, $PrevSong , -1 , True , False)
