@@ -5,7 +5,7 @@
 
 Opt( "MustDeclareVars", 1 )
 
-Global $hGui, $hEdit, $idEditSearch, $hLV, $iItems = 1000, $aItems[$iItems], $aSearch[$iItems], $iSearch = 0
+Global $hGui, $hEdit, $idEditSearch, $hLV, $iItems = 5500, $aItems[$iItems], $aSearch[$iItems], $iSearch = 0
 
 Example()
 

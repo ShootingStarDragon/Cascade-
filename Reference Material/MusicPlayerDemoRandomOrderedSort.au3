@@ -18,6 +18,12 @@ make sure to update $CurrentSong and $CurrentSongOpen consistently!
 ;i keep rewriting to musicfolders.txt
 -=-=-=-
 plan:
+faster init
+i have a sorted file list...
+probably use an array read/write once at the end
+
+
+
 -> "01.crossing field.mp3" does not play
 ->soundopen sets @error to 1, so maybe i can still outplay somehow using filenames...
 -=-=-=-=-=-=-=-=--
@@ -115,6 +121,34 @@ Func MusicListViewInit($LVhnd)
 		Global $MusicArrayCopy[1]
 			$MusicArrayCopy[0] = "nil"
 		
+		$MusicFILEArray = FileReadToArray ( $MusicFILE )
+		
+		;$MusicCount
+		For $x = 0 to UBound($MusicFILEArray,1)-1
+			;read line
+			$SongName = StringSplit($MusicFILEArray[$x], "|")[1]
+			$SongLikes = StringSplit($MusicFILEArray[$x], "|")[2]
+
+			;add to array
+			If $MusicArray[0] == "nil" Then
+				$MusicArray[0] = $SongName
+			Else
+				_ArrayAdd($MusicArray, $SongName)
+			EndIf
+			
+			;add to listview:
+			GUICtrlCreateListViewItem ($SongName & "|" & $SongLikes & "|" & $x+1, $LVhnd)
+			If $MusicArrayCopy[0] == "nil" Then
+				$MusicArrayCopy[0] = $SongName
+			Else
+				_ArrayAdd($MusicArrayCopy, $SongName)
+			EndIf
+			;set data
+			GUICtrlSetData ( $Label9, ($x/UBound($MusicFILEArray,1))*100  & '%' & " done" & ", " & "Working on " & $SongName)
+		Next
+		
+		
+		#comments-start
 		;make music array:
 		$MusicCount = _FileCountLines("MusicList.txt")
 		;Global $MusicArray[$MusicCount][3]
@@ -143,6 +177,7 @@ Func MusicListViewInit($LVhnd)
 			;set data
 			GUICtrlSetData ( $Label9, ($x/$MusicCount)*100  & '%' & " done" & ", " & "Working on " & $SongName)
 		Next
+		#comments-end
 	Else
 		$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
 		FileClose ($MusicFILE)
@@ -785,7 +820,6 @@ Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 						;then assemble again
 						;problem: i can only do this for one search. the next search will search this neutered list.
 						
-						
 						;problem 1:						
 						;successive filters are not good:
 							OK:
@@ -799,14 +833,12 @@ Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 							
 						;if not, then filter out
 						
-						
 						plan: copy filenames into array and have it be init at the same time i call musivlistviewinit
 						then i can filter by songname AND when reading or writing i take info from MusicList.txt AKA regenerate the row
 						need: 
 							songname 
 							likes
 							line in text file
-						
 						
 						#comments-end
 						;MsgBox(0,"?",GUICtrlRead($label14))
@@ -819,19 +851,19 @@ Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 						;MsgBox(0,"array",$MusicArrayCopy[$FoundArray[0]])
 						;_ArrayDisplay($FoundArray)
 						If $FoundArray <> -1 Then
+							;fileopen in read mode
+							$MusicFILE = FileOpen ("MusicList.txt", 256)
+							;read to array
+							$MusicArrayOrigin = FileReadToArray ( $MusicFILE )
 							For $y = 0 to UBound($FoundArray,1)-1
 								;$FoundArray[$y] = index of song name in $MusicArrayCopy
 								$SongCandidateName = $MusicArrayCopy[$FoundArray[$y]]
-								;fileopen in read mode
-								$MusicFILE = FileOpen ("MusicList.txt", 256)
-								;read to array
-								$MusicArrayOrigin = FileReadToArray ( $MusicFILE )
 								;Search in file. 1 in $iCompare should be a partial search...:
 								$SearchItemIndex = _ArraySearch($MusicArrayOrigin, $SongCandidateName,0,0,0,1,1,0,False)
-								FileClose ($MusicFILE)
 								;generate listview line:
 								GUICtrlCreateListViewItem ($SongCandidateName & "|" & StringSplit($MusicArrayOrigin[$SearchItemIndex], "|")[2] & "|" & $SearchItemIndex+1, $MusicListView)
 							Next
+							FileClose ($MusicFILE)
 						EndIf
 					EndIf
             EndSwitch
