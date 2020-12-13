@@ -15,41 +15,42 @@ Just use _GuiCtrlIPAddress_... functions example:
 -=-=-
 make sure to update $CurrentSong and $CurrentSongOpen consistently!
 -> timer plans: use autoplay or at least init/register the timerID globally
-
 -=-=-=-=-=-=-=-=--
 plan:
-somehow i am duplicating -1 lines...
-this line fails probably when you add to zeroarray then remove it again but it's empty. it was complaining about improper bounds
-	If $ZeroArray[$ZeroTest][0] == "nil" Then
+neg/zero/ and pos arrays are not init if u just press play
+
+faster init
+	i have a sorted file list...
+	probably use an array read/write once at the end
 
 
 sometimes autoplay doesn't trigger immediately
 negative like value is too common
 
+
+this line fails probably when you add to zeroarray then remove it again but it's empty. it was complaining about improper bounds
+	If $ZeroArray[$ZeroTest][0] == "nil" Then
+
+
+
+
+
 ;i keep rewriting to musicfolders.txt (aka accumulate redundant info)
-
-faster init
-i have a sorted file list...
-probably use an array read/write once at the end
-
-
-
 -> "01.crossing field.mp3" does not play
 ->soundopen sets @error to 1, so maybe i can still outplay somehow using filenames...
 -=-=-=-=-=-=-=-=--
 -> COMPATIBILITY WITH XSPF
 -> search through playlists for song (have like a dropdown menu for playlist?)
 -> add song to playlist....
-
-
-
-find all playlists with this song (so xspf compatible)
->for the music player there should be a sort option where u go through ALL songs then sort out the song into a playlist
-
 >remember relative audio levels for songs...
 >can play music using xspf files
 
-		
+
+-=-=-=-
+DONE:
+somehow i am duplicating -1 lines...
+find all playlists with this song (so xspf compatible)
+>for the music player there should be a sort option where u go through ALL songs then sort out the song into a playlist
 -=-=-=-
 -> blacklist filter being written to multiple times?
 -> blacklist filter remove song from list and ???	
@@ -287,7 +288,7 @@ While 1
 				$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
 				;play song
 				_SoundPlay ( $CurrentSongOpen )
-				GUICtrlSetData ( $Label9, "Playing Line #D: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) & " " & $CurrentSong)
+				GUICtrlSetData ( $Label9, "Playing Line #D: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & $CurrentSong)
 				;add to history array
 				;If $HistoryArray[0] == "nil" Then
 				;	;replace 1st val
@@ -316,10 +317,12 @@ While 1
 						;set data on ListView
 						_GUICtrlListView_SetItemText ( $MusicListView, $SelectedSongID, Int($currLike) - 1 , 1 )
 						; i suspect i need to $RowNum+1 since i get the info from the listview which is 0-indexed
-						_FileWriteToLine("MusicList.txt", $RowNum+1,  $SongName & "|" & Int($currLike) - 1, True)
+						;+1 FAILS
+						;when i say -10 on next line, EVERYTHING IS FUCKING FINE SOMEHOW
+						_FileWriteToLine("MusicList.txt", $RowNum,  $SongName & "|" & Int($currLike) - 1, True)
 					Else
 						_GUICtrlListView_SetItemText ( $MusicListView, $SelectedSongID, - 1 , 1 )
-						_FileWriteToLine("MusicList.txt", $RowNum+1,  $SongName & "|" & - 1, True)
+						_FileWriteToLine("MusicList.txt", $RowNum,  $SongName & "|" & - 1, True)
 					EndIf
 					
 					Switch $currLike
@@ -590,7 +593,7 @@ Func MusicListInit ($FileSourceGIVEN)
 			
 			$searchANS = _ArraySearch ($MusicArray, $FileList[$x] & "|" & 0,0,0,0,0,1,0,False)
 			;MsgBox(0,$FileList[$x], $searchANS &"|"& @error)
-			GUICtrlCreateListViewItem($FileList[$x] & "|" & "0" & "|" & $searchANS, $MusicListView )
+			GUICtrlCreateListViewItem($FileList[$x] & "|" & "0" & "|" & $searchANS+1, $MusicListView )
 			FileClose ($MusicFILE)
 		Else
 			GUICtrlSetData($Label9,($x/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $FileList[$x])
