@@ -18,7 +18,6 @@ make sure to update $CurrentSong and $CurrentSongOpen consistently!
 ;i keep rewriting to musicfolders.txt
 -=-=-=-
 plan:
--> search would be nice....
 -> "01.crossing field.mp3" does not play
 ->soundopen sets @error to 1, so maybe i can still outplay somehow using filenames...
 -=-=-=-=-=-=-=-=--
@@ -172,8 +171,10 @@ While 1
 					_SoundStop ( $CurrentSongOpen )
 				EndIf
 				
-				$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
+				$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
 				;_ArrayDisplay($CurrentSongOpen)
+				;_WinAPI_PlaySound
+				;MsgBox(0,"lf error = 1", @error == 1)
 				_SoundPlay ( $CurrentSongOpen )
 				
 				;MsgBox(0,"timerlength", $CurrentSong)
@@ -204,11 +205,11 @@ While 1
 			;stop current song
 			If $prevsongIndex <> 0 Then
 				;MsgBox(0,"",$HistoryArray[$prevsongIndex])
-				;$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $HistoryArray[$prevsongIndex] )
+				;$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $HistoryArray[$prevsongIndex] )
 				_SoundStop($CurrentSongOpen)
 				;set current song as the prev song, and DONT add to history queue
 				$CurrentSong = $HistoryArray[$prevsongIndex -1]
-				$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
+				$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
 				;play prev song
 				_SoundPlay($CurrentSongOpen)
 				GUICtrlSetData ( $Label9, "Playing Line #: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & $CurrentSong)
@@ -226,7 +227,7 @@ While 1
 				;choose new song:
 				$CurrentSong = WeightedChoice ()
 				;request new song
-				$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
+				$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
 				;play song
 				_SoundPlay ( $CurrentSongOpen )
 				GUICtrlSetData ( $Label9, "Playing Line #: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & $CurrentSong)
@@ -241,7 +242,7 @@ While 1
 				_SoundStop($CurrentSongOpen)
 				$CurrentSong = $HistoryArray[$prevsongIndex+1]
 				;play the next song in history
-				$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
+				$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' &  $CurrentSong )
 				;play song
 				_SoundPlay ( $CurrentSongOpen )
 				GUICtrlSetData ( $Label9, "Playing Line #: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & $CurrentSong)
@@ -320,13 +321,17 @@ While 1
 			GUICtrlSetData ( $Label5, "VolUp," & $number )
 			GUICtrlSetData ( $Label6, "VolDown," & $number )
 		Case $Label8
-			_ArrayDisplay($MusicArrayCopy)
-			;$currentd = _SoundOpen ("C:\Users\RaptorPatrolCore\Downloads\01 - Overfly ~TV size~.mp3")
-			$currentd = _SoundOpen ("C:\Users\RaptorPatrolCore\Downloads\01.crossing field.mp3")
+			;_WinAPI_PlaySound ("C:\Users\RaptorPatrolCore\Downloads\01crossing field - Copy.mp3" )
+			;SoundPlay("C:\Users\RaptorPatrolCore\Downloads\01crossing field - Copy.mp3")
+			;SoundPlay("C:\Users\RaptorPatrolCore\Downloads\01 - Overfly ~TV size~.mp3")
+			;SoundPlay("C:\Users\RaptorPatrolCore\Downloads\01. crossing field.mp3")
+			;_PathSplit ( "C:\Users\RaptorPatrolCore\Downloads\01.crossing field.mp3", ByRef $sDrive, ByRef $sDir, ByRef $sFileName, ByRef $sExtension )
+			;$currentd = _RPCSoundOpen ("C:\Users\RaptorPatrolCore\Downloads\01 - Overfly ~TV size~.mp3")
+			;$currentd = _RPCSoundOpen ("C:\Users\RaptorPatrolCore\Downloads\01.crossing field.mp3")
 			;_ArrayDisplay($currentd)
-			MsgBox(0,"", @error)
-			_SoundPlay($currentd)
-			;_SoundPlay(_SoundOpen ("C:\Users\RaptorPatrolCore\Downloads\01.crossing field.mp3" ))
+			;MsgBox(0,"", @error == 1)
+			;_SoundPlay($currentd)
+			;_SoundPlay(_RPCSoundOpen ("C:\Users\RaptorPatrolCore\Downloads\01.crossing field.mp3" ))
 			;_ArrayDisplay($HistoryArray)
 			;MsgBox(0,"msgboxlabel8",_ArrayToString ( (_GUICtrlListView_GetItemTextArray ( $MusicListView , 0))))
 			;WeightedChoice()
@@ -718,7 +723,7 @@ Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
 	If  _SoundStatus ( $CurrentSongOpen ) == 0 or _SoundStatus ( $CurrentSongOpen ) == "stopped" Then
 		;randomly pick the next song
 		$CurrentSong = WeightedChoice()
-		$CurrentSongOpen = _SoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & $CurrentSong )
+		$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & $CurrentSong )
 		GUICtrlSetData ( $Label9, "Autoplaying. Line #: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & $CurrentSong)
 		_SoundPlay ( $CurrentSongOpen )
 		;set the timer again to songlength + 500 miliseconds
@@ -833,3 +838,141 @@ Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
     EndSwitch
     Return $GUI_RUNDEFMSG
 EndFunc
+
+Func __RPCSoundMciSendString($sString, $iLen = 0)
+	;MsgBox(0,"ddd", @error)
+	Local $aRet = DllCall("winmm.dll", "dword", "mciSendStringW", "wstr", $sString, "wstr", "", "uint", $iLen, "ptr", 0)
+	;MsgBox(0,"dde", @error)
+	If @error Then Return SetError(@error, @extended, "")
+	If $aRet[0] Then Return SetError(10, $aRet[0], $aRet[2])
+	Return $aRet[2]
+EndFunc   ;==>__SoundMciSendString
+
+Func _RPCSoundOpen($sFilePath)
+	$Ans = _RPCSoundOpenOld($sFilePath)
+	;If I cannot play, write to file:
+	If @error <> 0 Then
+		$musicErrors = FileOpen("MusicErrors.txt",1)
+		FileWrite($musicErrors, $CurrentSong & @CRLF)
+		FileClose($musicErrors)
+	EndIf
+	Return $Ans
+EndFunc
+
+Func _RPCSoundOpenOld($sFilePath)
+	;MsgBox(0,"injected?","y!")
+	;check for file
+	If Not FileExists($sFilePath) Then Return SetError(2, 0, 0)
+	;create random string for file ID
+	Local $aSndID[4]
+	For $i = 1 To 10
+		$aSndID[0] &= Chr(Random(97, 122, 1))
+	Next
+	;MsgBox(0,"A", @error)
+	Local $sDrive, $sDir, $sFName, $sExt
+	_PathSplit($sFilePath, $sDrive, $sDir, $sFName, $sExt)
+	;MsgBox(0,"b", @error)
+	Local $sSndDirName
+	If $sDrive = "" Then
+		$sSndDirName = @WorkingDir & "\"
+	Else
+		$sSndDirName = $sDrive & $sDir
+	EndIf
+	Local $sSndFileName = $sFName & $sExt
+	;MsgBox(0,"C", @error)
+	Local $sSndDirShortName = FileGetShortName($sSndDirName, 1)
+	;MsgBox(0,"D", @error)
+	;open file
+	__RPCSoundMciSendString("open """ & $sFilePath & """ alias " & $aSndID[0])
+	;MsgBox(0,"E", @error)
+
+	;__RPCSoundMciSendString RETURNS ERROR OF 10 FOR SOME REASON AND I CANNOT PLAY 01.crossing field.mp3 in downloads folder
+	If @error Then Return SetError(1, @error, 0) ; open failed
+	
+	Local $sTrackLength, $bTryNextMethod = False
+	Local $oShell = ObjCreate("shell.application")
+	If IsObj($oShell) Then
+		Local $oShellDir = $oShell.NameSpace($sSndDirShortName)
+		If IsObj($oShellDir) Then
+			Local $oShellDirFile = $oShellDir.Parsename($sSndFileName)
+			If IsObj($oShellDirFile) Then
+				Local $sRaw = $oShellDir.GetDetailsOf($oShellDirFile, -1)
+				Local $aInfo = StringRegExp($sRaw, ": ([0-9]{2}:[0-9]{2}:[0-9]{2})", $STR_REGEXPARRAYGLOBALMATCH)
+				If Not IsArray($aInfo) Then
+					$bTryNextMethod = True
+				Else
+					$sTrackLength = $aInfo[0]
+				EndIf
+			Else
+				$bTryNextMethod = True
+			EndIf
+		Else
+			$bTryNextMethod = True
+		EndIf
+	Else
+		$bTryNextMethod = True
+	EndIf
+
+	Local $sTag
+	If $bTryNextMethod Then
+		$bTryNextMethod = False
+		If $sExt = ".mp3" Then
+			Local $hFile = FileOpen(FileGetShortName($sSndDirName & $sSndFileName), $FO_READ)
+			$sTag = FileRead($hFile, 5156)
+			FileClose($hFile)
+			$sTrackLength = __SoundReadXingFromMP3($sTag)
+			If @error Then $bTryNextMethod = True
+		Else
+			$bTryNextMethod = True
+		EndIf
+	EndIf
+
+	If $bTryNextMethod Then
+		$bTryNextMethod = False
+		If $sExt = ".mp3" Then
+			$sTrackLength = __SoundReadTLENFromMP3($sTag)
+			If @error Then $bTryNextMethod = True
+		Else
+			$bTryNextMethod = True
+		EndIf
+	EndIf
+
+	If $bTryNextMethod Then
+		$bTryNextMethod = False
+		;tell mci to use time in milliseconds
+		__SoundMciSendString("set " & $aSndID[0] & " time format milliseconds")
+		;receive length of sound
+		Local $iSndLenMs = __SoundMciSendString("status " & $aSndID[0] & " length", 255)
+
+		;assign modified data to variables
+		Local $iSndLenMin, $iSndLenHour, $iSndLenSecs
+		__SoundTicksToTime($iSndLenMs, $iSndLenHour, $iSndLenMin, $iSndLenSecs)
+
+		;assign formatted data to $sSndLenFormat
+		$sTrackLength = StringFormat("%02i:%02i:%02i", $iSndLenHour, $iSndLenMin, $iSndLenSecs)
+	EndIf
+
+	; Convert Track_Length to mSec
+	Local $aiTime = StringSplit($sTrackLength, ":")
+	Local $iActualTicks = __SoundTimeToTicks($aiTime[1], $aiTime[2], $aiTime[3])
+
+	;tell mci to use time in milliseconds
+	__SoundMciSendString("set " & $aSndID[0] & " time format milliseconds")
+
+	;;Get estimated length
+	Local $iSoundTicks = __SoundMciSendString("status " & $aSndID[0] & " length", 255)
+
+	;Compare to actual length
+	Local $iVBRRatio
+	If Abs($iSoundTicks - $iActualTicks) < 1000 Then ;Assume CBR, as our track length from shell.application is only accurate within 1000ms
+		$iVBRRatio = 0
+	Else ;Set correction ratio for VBR operations
+		$iVBRRatio = $iSoundTicks / $iActualTicks
+	EndIf
+
+	$aSndID[1] = $iVBRRatio
+	$aSndID[2] = 0
+	$aSndID[3] = $__SOUNDCONSTANT_SNDID_MARKER
+
+	Return $aSndID
+EndFunc   ;==>_RPCSoundOpen
