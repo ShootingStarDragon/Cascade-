@@ -17,6 +17,8 @@ make sure to update $CurrentSong and $CurrentSongOpen consistently!
 -> timer plans: use autoplay or at least init/register the timerID globally
 -=-=-=-=-=-=-=-=--
 plan:
+in history it shows that i select the same songs repeatedly
+cannot stop autoplay... add killtimer to stop button
 clickable progress bar
 neg/zero/ and pos arrays are not init if u just press play (there are 2 init, so maybe they are not init in the folder init and are ok in the 2nd engage? another thing too is they are probably init in "next" button)
 
@@ -226,7 +228,7 @@ While 1
 				If $AutoplayTimer == 0 Then
 					$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
 				Else
-					$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 ,"", $AutoplayTimer)
+					$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay", $AutoplayTimer)
 				EndIf 
 
 				GUICtrlSetData ( $Label9, "Playing Line #A: " & _GUICtrlListView_FindInText ( $MusicListView, $CurrentSong , -1 , True , False) +1 & " " & $CurrentSong)
@@ -303,8 +305,10 @@ While 1
 			If $AutoplayTimer == 0 Then
 				$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
 			Else
-				$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 ,"", $AutoplayTimer)
+				$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay", $AutoplayTimer)
 			EndIf 
+			;wtf timer
+			;GUICtrlSetData ( $Label9, "timeout in  "& (_SoundLength($CurrentSongOpen,2) + 500)/1000)
 			If UBound($HistoryArray,1) > 1 and $HistoryArray[0] <> "nil" Then
 				$SelectedSongID = _GUICtrlListView_FindInText ( $MusicListView, $PrevSong , -1 , True , False)
 				$SelectedSong = _GUICtrlListView_GetItemTextArray ( $MusicListView , $SelectedSongID)
@@ -357,6 +361,7 @@ While 1
 			EndIf
 			$CurrentSongOpen = 0
 			$CurrentSong == 0
+			_Timer_KillAllTimers ( $hGUI )
 		Case $Label5
 			$number = StringSplit( GUICtrlRead ($Label5), ",") [2] + 5
 			SoundSetWaveVolume ( $number )
@@ -541,7 +546,7 @@ While 1
 				$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
 				For $y = 0 To UBound($MusicArray, 1)-1 
 					FileWrite ( $MusicFILE, $MusicArray[$y] & @CRLF )
-					GUICtrlSetData ( $Label9, ($y/$FileList[0])*100  & '%' & " done" & ", " & "Working on " & $SelectedSong)
+					GUICtrlSetData ( $Label9, ($y/UBound($MusicArray, 1))*100  & '%' & " done" & ", " & "Working on " & $SelectedSong)
 				Next
 				FileClose ($MusicFILE)
 				;add to blacklist.txt
@@ -775,9 +780,10 @@ EndFunc
 ;HEADS UP FUNCTION DIES IF IT ISNT GIVEN 4 ARGS! (when triggered by timer funcs)
 Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
 	#forceref $hWnd, $iMsg, $iIDTimer, $iTime
+	MsgBox(0,"",_SoundStatus ( $CurrentSongOpen ) & "|" & "?")
 	;GUICtrlSetData ( $Label9, "Autoplay triggered!..." & _SoundStatus ( $CurrentSongOpen ) == 0)
 	;make sure nothing is playing
-	If  _SoundStatus ( $CurrentSongOpen ) == 0 or _SoundStatus ( $CurrentSongOpen ) == "stopped" Then
+	If _SoundStatus ( $CurrentSongOpen ) == 0 or _SoundStatus ( $CurrentSongOpen ) == "stopped" Then
 		;randomly pick the next song
 		$CurrentSong = WeightedChoice()
 		$CurrentSongOpen = _RPCSoundOpen ( StringSplit(FileReadLine("MusicFolders.txt"), "|")[1] & '\' & $CurrentSong )
@@ -785,6 +791,12 @@ Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
 		_SoundPlay ( $CurrentSongOpen )
 		;set the timer again to songlength + 500 miliseconds
 		;_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , AutoPlay )
+		;set timer to play next song:
+		If $AutoplayTimer == 0 Then
+			$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
+		Else
+			$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay", $AutoplayTimer)
+		EndIf 
 	EndIf
 	;this is to mess with historyarray
 	;add to history array
