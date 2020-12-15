@@ -17,8 +17,21 @@ make sure to update $CurrentSong and $CurrentSongOpen consistently!
 -> timer plans: use autoplay or at least init/register the timerID globally
 -=-=-=-=-=-=-=-=--
 plan:
-in history it shows that i select the same songs repeatedly
-cannot stop autoplay... add killtimer to stop button
+if there is an existing timer and you force to play another song, kill the old timer then run new timer
+if i click like button but there is nothing selected on listview, assume the current song is to be +1'd, (IF ANY!)
+
+>fast way to filter and display massive listview (5,800 items in a few seconds, not 30 sec to 1 min)
+>I STILL WRITE TO WRONG LINE AND GET MULTIPLE SONGS  
+	>this is because when i blacklist, i don't update the row# on the listview and get fucked when i call the wrong index from the listview
+	>if u blacklist the label9 msg does not match the listview
+
+>in history it shows that i select the same songs repeatedly
+
+weighted choice
+	>make weighted choice choose negative values less requently (maybe 10%?)
+	>also maybe don't choose the same song twice
+
+	
 clickable progress bar
 neg/zero/ and pos arrays are not init if u just press play (there are 2 init, so maybe they are not init in the folder init and are ok in the 2nd engage? another thing too is they are probably init in "next" button)
 
@@ -102,6 +115,7 @@ $Label11 = GUICtrlCreateButton("like (+1)", 0, 166, 81, 41)
 $Label12 = GUICtrlCreateButton("dislike (-1)", 81, 166, 81, 41)
 $Label13 = GUICtrlCreateButton("blacklist", 0, 220, 81, 41)
 $Label14 = GUICtrlCreateEdit( "search", 81, 240, 300-20, 20, BitXOR( $GUI_SS_DEFAULT_EDIT, $WS_HSCROLL, $WS_VSCROLL ) )
+$Label15 = GUICtrlCreateLabel("", 0, 280, 400, 30)
 
 ; Handle $WM_COMMAND messages from Edit control
   ; To be able to read the search string dynamically while it's typed in
@@ -143,6 +157,7 @@ Func MusicListViewInit($LVhnd)
 		ReDim $MusicArray[UBound($MusicFILEArray,1)]
 		ReDim $MusicArrayCopy[UBound($MusicFILEArray,1)]
 		
+		_GUICtrlListView_DeleteAllItems($MusicListView)
 		For $x = 0 to UBound($MusicFILEArray,1)-1
 			;read line
 			$SongName = StringSplit($MusicFILEArray[$x], "|")[1]
@@ -538,15 +553,17 @@ While 1
 				;https://www.autoitscript.com/forum/topic/60817-file-delete-line/
 				;search through array and delete line
 				$SearchItemIndex = _ArraySearch($MusicArray, $SearchItem,0,0,0,0,1,0,False)
-				MsgBox(0,"?", $SearchItemIndex & "|" & $SearchItem)
+				;MsgBox(0,"?", $SearchItemIndex & "|" & $SearchItem)
 				_ArrayDelete($MusicArray, $SearchItemIndex )
 				_ArrayDisplay($MusicArray)
 				FileClose ($MusicFILE)
 				;write to file
 				$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
+				;i can MAYBE make this faster by writing only after the index (so i don't rewrite everything!)
+				;not possible i need to delete a line and to do that i do need to rewrite
 				For $y = 0 To UBound($MusicArray, 1)-1 
 					FileWrite ( $MusicFILE, $MusicArray[$y] & @CRLF )
-					GUICtrlSetData ( $Label9, ($y/UBound($MusicArray, 1))*100  & '%' & " done" & ", " & "Working on " & $SelectedSong)
+					;GUICtrlSetData ( $Label9, ($y/UBound($MusicArray, 1))*100  & '%' & " done" & ", " & "Working on " & $SelectedSong)
 				Next
 				FileClose ($MusicFILE)
 				;add to blacklist.txt
@@ -554,6 +571,7 @@ While 1
 				FileWrite ( $blacklistfileOPEN, $SongName & "|" & $currLikeVAL & @CRLF)
 				FileClose ($blacklistfileOPEN)
 			EndIf
+			MusicListViewInit($MusicListView)
 	EndSwitch
 WEnd
 
@@ -780,8 +798,9 @@ EndFunc
 ;HEADS UP FUNCTION DIES IF IT ISNT GIVEN 4 ARGS! (when triggered by timer funcs)
 Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
 	#forceref $hWnd, $iMsg, $iIDTimer, $iTime
-	MsgBox(0,"",_SoundStatus ( $CurrentSongOpen ) & "|" & "?")
-	;GUICtrlSetData ( $Label9, "Autoplay triggered!..." & _SoundStatus ( $CurrentSongOpen ) == 0)
+	;MsgBox(0,"",_SoundStatus ( $CurrentSongOpen ) & "|" & "?")
+	_SoundStatus ( $CurrentSongOpen )
+	GUICtrlSetData ( $Label15, "Autoplay triggered!A..." & _SoundStatus ( $CurrentSongOpen))
 	;make sure nothing is playing
 	If _SoundStatus ( $CurrentSongOpen ) == 0 or _SoundStatus ( $CurrentSongOpen ) == "stopped" Then
 		;randomly pick the next song
@@ -792,6 +811,7 @@ Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
 		;set the timer again to songlength + 500 miliseconds
 		;_Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , AutoPlay )
 		;set timer to play next song:
+		GUICtrlSetData ( $Label15, "Autoplay triggered!B..." & _SoundLength($CurrentSongOpen,2) + 500)
 		If $AutoplayTimer == 0 Then
 			$AutoplayTimer = _Timer_SetTimer ( $hGUI , _SoundLength($CurrentSongOpen,2) + 500 , "AutoPlay" )
 		Else
