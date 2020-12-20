@@ -17,6 +17,11 @@ make sure to update $CurrentSong and $CurrentSongOpen consistently!
 -> timer plans: use autoplay or at least init/register the timerID globally
 -=-=-=-=-=-=-=-=--
 plan:
+i don't have to delete everything for blacklist button, i can just edit everything to -1 the row value of everything after the blacklisted item
+edit weighted choice to make negative values matter (-10 less likely to play than -1)
+
+check autoplay func for REPEATING SO FUCKING MUCH
+fix filter speed, maybe i can still do successive filters and only reset when u make ur filter less restrictive (aka: less characters)
 if there is an existing timer and you force to play another song, kill the old timer then run new timer
 if i click like button but there is nothing selected on listview, assume the current song is to be +1'd, (IF ANY!)
 
@@ -170,7 +175,7 @@ Func MusicListViewInit($LVhnd)
 			GUICtrlCreateListViewItem ($SongName & "|" & $SongLikes & "|" & $x+1, $LVhnd)
 			
 			;set data
-			GUICtrlSetData ( $Label9, ($x/UBound($MusicFILEArray,1))*100  & '%' & " done" & ", " & "Working on " & $SongName)
+			;GUICtrlSetData ( $Label9, ($x/UBound($MusicFILEArray,1))*100  & '%' & " done" & ", " & "Working on " & $SongName)
 		Next
 		
 		
@@ -555,7 +560,7 @@ While 1
 				$SearchItemIndex = _ArraySearch($MusicArray, $SearchItem,0,0,0,0,1,0,False)
 				;MsgBox(0,"?", $SearchItemIndex & "|" & $SearchItem)
 				_ArrayDelete($MusicArray, $SearchItemIndex )
-				_ArrayDisplay($MusicArray)
+				;_ArrayDisplay($MusicArray)
 				FileClose ($MusicFILE)
 				;write to file
 				$MusicFILE = FileOpen ("MusicList.txt", 2 + 256)
@@ -801,6 +806,7 @@ Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
 	;MsgBox(0,"",_SoundStatus ( $CurrentSongOpen ) & "|" & "?")
 	_SoundStatus ( $CurrentSongOpen )
 	GUICtrlSetData ( $Label15, "Autoplay triggered!A..." & _SoundStatus ( $CurrentSongOpen))
+	;if autoplay fails it usually says playing, so what do? make a repeating timer for 5 sec? I should have reset the timer...
 	;make sure nothing is playing
 	If _SoundStatus ( $CurrentSongOpen ) == 0 or _SoundStatus ( $CurrentSongOpen ) == "stopped" Then
 		;randomly pick the next song
