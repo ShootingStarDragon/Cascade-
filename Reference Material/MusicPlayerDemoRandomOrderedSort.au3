@@ -17,6 +17,13 @@ make sure to update $CurrentSong and $CurrentSongOpen consistently!
 -> timer plans: use autoplay or at least init/register the timerID globally
 -=-=-=-=-=-=-=-=--
 plan:
+>make backup playlist on window close
+>rename window title to playing song, and know what the like value of the song is without scrolling to it
+>fix search from being shitty
+>update songlist
+
+
+
 i don't have to delete everything for blacklist button, i can just edit everything to -1 the row value of everything after the blacklisted item
 edit weighted choice to make negative values matter (-10 less likely to play than -1)
 
