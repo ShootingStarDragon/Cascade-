@@ -17,13 +17,13 @@ make sure to update $CurrentSong and $CurrentSongOpen consistently!
 -> timer plans: use autoplay or at least init/register the timerID globally
 -=-=-=-=-=-=-=-=--
 plan:
+	>rename window title to playing song, and know what the like value of the song is without scrolling to it
+		https://www.autoitscript.com/autoit3/docs/functions/WinSetTitle.htm
 >make backup playlist on window close
->rename window title to playing song, and know what the like value of the song is without scrolling to it
->fix search from being shitty
+
 >update songlist
-
-
-
+>fix search from being shitty
+======
 i don't have to delete everything for blacklist button, i can just edit everything to -1 the row value of everything after the blacklisted item
 edit weighted choice to make negative values matter (-10 less likely to play than -1)
 
@@ -232,6 +232,10 @@ $AutoplayTimer = 0
 While 1
 	Switch GUIGetMsg()
 		Case $GUI_EVENT_CLOSE
+			;update MusicListBackup:
+			;do a merge
+			;open current file
+			;open backup file
 			Exit
 		Case $Label1
 			;if something is selected from listview, play:
@@ -269,6 +273,9 @@ While 1
 				Else
 					_ArrayAdd($HistoryArray, $CurrentSong)
 				EndIf
+				
+				;set window title
+				WinSetTitle ( $hGUI, "", "MPDROS: " & $CurrentSong)
 			Else
 				GUICtrlSetData ( $Label9, "No song selected!")
 			EndIf
@@ -839,6 +846,9 @@ Func AutoPlay ($hWnd, $iMsg, $iIDTimer, $iTime, $CurrentSongOpen)
 	Else
 		_ArrayAdd($HistoryArray, $CurrentSong)
 	EndIf
+	
+	;set window title
+	WinSetTitle ( $hGUI, "", "MPDROS: " & $CurrentSong)
 EndFunc
 
 ;HEADS UP FILESEARCH NEEDS the fileopened file to be FILEREAD!
